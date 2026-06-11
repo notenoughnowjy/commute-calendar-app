@@ -28,7 +28,11 @@
 ## 상태 관리 & 아키텍처
 - 사용할 상태 관리는 flutter_bloc을 사용한다
 - 싱글톤 방식을 선호한다
-- 아키텍처는 BLoC 기반 Clean Architecture를 사용한다.
+- 아키텍처는 BLoC 기반 Clean Architecture를 사용한다
+- 의존성 주입(DI)은 GetIt을 사용하여 `lib/core/di/service_locator.dart`에서 관리한다
+  - 서비스 로케이터: `final getIt = GetIt.instance`
+  - 초기화: `main()` 함수에서 `await setupServiceLocator()` 호출
+  - 사용: `getIt<ServiceType>()`로 등록된 서비스 접근
 
 ## 디자인 컨벤션
 - iOS, Android뿐 아니라 Mac, Windows까지 고려한 반응형 디자인을 구현한다

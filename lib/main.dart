@@ -1,6 +1,26 @@
+import 'package:commute_calendar/core/di/setup_di.dart';
+import 'package:commute_calendar/feature/calendar/presentation/pages/calendar_page.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:intl/date_symbol_data_local.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'shared/styles/app_theme.dart';
 
-void main() {
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  await dotenv.load(fileName: '.env');
+  await initializeDateFormatting('ko_KR', null);
+
+  // ignore: deprecated_member_use
+  await Supabase.initialize(
+    url: dotenv.env['SUPABASE_URL']!,
+    // ignore: deprecated_member_use
+    anonKey: dotenv.env['SUPABASE_ANON_KEY']!,
+  );
+
+  setupDI();
+
   runApp(const MyApp());
 }
 
@@ -10,7 +30,10 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      home: Scaffold(body: Center(child: Text('ㅇㅇ'))),
+      debugShowCheckedModeBanner: false,
+      title: 'Commute Calendar',
+      theme: AppTheme.lightTheme,
+      home: const CalendarPage(),
     );
   }
 }
