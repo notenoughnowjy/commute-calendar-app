@@ -1,4 +1,5 @@
 import 'package:commute_calendar/core/services/supabase_service.dart';
+import 'package:commute_calendar/feature/calendar/presentation/bloc/calendar_bloc.dart';
 import 'package:commute_calendar/feature/calendar/data/repositories/mock_calendar_repository.dart';
 import 'package:commute_calendar/feature/calendar/domain/repositories/i_calendar_repository.dart';
 import 'package:commute_calendar/feature/calendar/domain/usecases/add_work_record_usecase.dart';
@@ -33,5 +34,16 @@ Future<void> setupServiceLocator() async {
   );
   getIt.registerFactory<CalculateMonthlyStatsUseCase>(
     () => CalculateMonthlyStatsUseCase(getIt<ICalendarRepository>()),
+  );
+
+  // 4. BLoC
+  getIt.registerFactory<CalendarBloc>(
+    () => CalendarBloc(
+      getMonthlyRecords: getIt<GetMonthlyRecordsUseCase>(),
+      addWorkRecord: getIt<AddWorkRecordUseCase>(),
+      updateWorkRecord: getIt<UpdateWorkRecordUseCase>(),
+      deleteWorkRecord: getIt<DeleteWorkRecordUseCase>(),
+      calculateMonthlyStats: getIt<CalculateMonthlyStatsUseCase>(),
+    ),
   );
 }
