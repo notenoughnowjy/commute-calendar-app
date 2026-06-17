@@ -13,12 +13,13 @@ class AuthInitial extends AuthState {
 }
 
 class AuthAuthenticated extends AuthState {
-  const AuthAuthenticated(this.user);
+  const AuthAuthenticated(this.user, {this.isAutoLogin = false});
 
   final UserEntity user;
+  final bool isAutoLogin;
 
   @override
-  List<Object?> get props => [user];
+  List<Object?> get props => [user, isAutoLogin];
 }
 
 class AuthUnauthenticated extends AuthState {

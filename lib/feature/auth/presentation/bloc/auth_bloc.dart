@@ -28,15 +28,19 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   ) async {
     final user = await _getCurrentUser();
     if (user != null) {
-      emit(AuthAuthenticated(user));
+      emit(AuthAuthenticated(user, isAutoLogin: true));
     } else {
       emit(const AuthUnauthenticated());
     }
 
     await emit.forEach(
       _getAuthStateStream(),
-      onData: (user) =>
-          user != null ? AuthAuthenticated(user) : const AuthUnauthenticated(),
+      onData: (record) {
+        final (user, isAutoLogin) = record;
+        return user != null
+            ? AuthAuthenticated(user, isAutoLogin: isAutoLogin)
+            : const AuthUnauthenticated();
+      },
       onError: (_, e) => const AuthUnauthenticated(),
     );
   }

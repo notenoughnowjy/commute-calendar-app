@@ -35,6 +35,11 @@
   - 초기화: `main()` 함수에서 `await setupServiceLocator()` 호출
   - 사용: `getIt<ServiceType>()`로 등록된 서비스 접근
 
+## 레이어 규칙
+- **DataSource**: 순수 데이터 요청 로직만 담당. try-catch 없음. Model 객체 반환
+- **Repository**: DataSource를 주입받아 try-catch로 예외 처리. Entity 객체 반환
+- **추상 인터페이스**: Repository만 인터페이스(`IXxxRepository`)를 만든다. DataSource는 추상체 없이 직접 구현
+
 ## 디자인 컨벤션
 - iOS, Android뿐 아니라 Mac, Windows까지 고려한 반응형 디자인을 구현한다
 - 화려한 디자인보다 심플하고 명확한 디자인을 선호한다

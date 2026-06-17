@@ -8,7 +8,8 @@ import 'package:commute_calendar/feature/auth/domain/usecases/sign_in_usecase.da
 import 'package:commute_calendar/feature/auth/domain/usecases/sign_out_usecase.dart';
 import 'package:commute_calendar/feature/auth/presentation/bloc/auth_bloc.dart';
 import 'package:commute_calendar/feature/auth/presentation/sign_in/bloc/sign_in_bloc.dart';
-import 'package:commute_calendar/feature/calendar/data/repositories/mock_calendar_repository.dart';
+import 'package:commute_calendar/feature/calendar/data/datasources/work_record_data_source.dart';
+import 'package:commute_calendar/feature/calendar/data/repositories/calendar_repository_impl.dart';
 import 'package:commute_calendar/feature/calendar/domain/repositories/i_calendar_repository.dart';
 import 'package:commute_calendar/feature/calendar/domain/usecases/add_work_record_usecase.dart';
 import 'package:commute_calendar/feature/calendar/domain/usecases/calculate_monthly_stats_usecase.dart';
@@ -55,8 +56,13 @@ Future<void> setupServiceLocator() async {
     () => SignInBloc(signIn: getIt<SignInUseCase>()),
   );
 
-  // 3. Calendar — Repository (Mock) → UseCases → Bloc
-  getIt.registerSingleton<ICalendarRepository>(MockCalendarRepository());
+  // 3. Calendar — DataSource → Repository → UseCases → Bloc
+  getIt.registerSingleton<WorkRecordDataSource>(
+    WorkRecordDataSource(getIt<SupabaseClient>()),
+  );
+  getIt.registerSingleton<ICalendarRepository>(
+    CalendarRepositoryImpl(getIt<WorkRecordDataSource>()),
+  );
   getIt.registerFactory<GetMonthlyRecordsUseCase>(
     () => GetMonthlyRecordsUseCase(getIt<ICalendarRepository>()),
   );

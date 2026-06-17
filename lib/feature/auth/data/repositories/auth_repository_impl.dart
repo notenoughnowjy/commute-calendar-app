@@ -8,11 +8,25 @@ class AuthRepositoryImpl implements IAuthRepository {
   const AuthRepositoryImpl(this._dataSource);
 
   @override
+  Future<UserEntity> signUp(
+    String email,
+    String password,
+    String name,
+    String? department,
+  ) async {
+    try {
+      return await _dataSource.signUp(email, password, name, department);
+    } catch (e) {
+      throw Exception('회원가입 중 오류가 발생했습니다: $e');
+    }
+  }
+
+  @override
   Future<UserEntity> signIn(String email, String password) async {
     try {
       return await _dataSource.signIn(email, password);
     } catch (e) {
-      throw Exception('로그인 중 오류가 발생했습니다: ${e.toString().replaceAll('Exception: ', '')}');
+      throw Exception('로그인 중 오류가 발생했습니다: $e');
     }
   }
 
@@ -35,5 +49,5 @@ class AuthRepositoryImpl implements IAuthRepository {
   }
 
   @override
-  Stream<UserEntity?> get authStateStream => _dataSource.authStateStream;
+  Stream<(UserEntity?, bool)> get authStateStream => _dataSource.authStateStream;
 }

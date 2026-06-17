@@ -6,7 +6,7 @@ class GetAuthStateStreamUseCase {
 
   final IAuthRepository _repository;
 
-  Stream<UserEntity?> call() {
+  Stream<(UserEntity?, bool)> call() {
     return _repository.authStateStream;
   }
 }

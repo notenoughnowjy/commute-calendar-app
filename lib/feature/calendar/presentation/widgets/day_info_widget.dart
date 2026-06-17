@@ -2,10 +2,13 @@ import 'package:commute_calendar/core/services/holiday_service.dart';
 import 'package:commute_calendar/core/theme/theme_service.dart';
 import 'package:commute_calendar/feature/calendar/domain/entities/work_record_entity.dart';
 import 'package:commute_calendar/feature/calendar/presentation/bloc/calendar_bloc.dart';
+import 'package:commute_calendar/feature/calendar/presentation/bloc/calendar_event.dart';
 import 'package:commute_calendar/feature/calendar/presentation/bloc/calendar_state.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart' show TimeOfDay;
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
 
 class DayInfoWidget extends StatefulWidget {
   const DayInfoWidget({super.key});
@@ -77,7 +80,6 @@ class _DayInfoContent extends StatelessWidget {
       selectedDate.day,
     );
     final record = records[normalizedDate];
-    final holidayName = HolidayService.getHolidayName(normalizedDate, holidays);
     final isWeekend = _isWeekend(normalizedDate);
 
     return Container(
@@ -86,19 +88,27 @@ class _DayInfoContent extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          _DateHeader(
-            date: normalizedDate,
-            holidayName: holidayName,
-            isWeekend: isWeekend,
-            hasHolidayRecord: record?.type == WorkType.holiday,
+          Stack(
+            children: [
+              _DateHeader(
+                date: normalizedDate,
+                holidays: holidays,
+                isWeekend: isWeekend,
+                hasHolidayRecord: record?.type == WorkType.holiday,
+              ),
+              if (record != null)
+                Positioned(
+                  right: 0,
+                  top: 0,
+                  child: _DeleteButton(recordId: record.id),
+                ),
+            ],
           ),
-          const SizedBox(height: 8),
-          _StatusMessage(
-            record: record,
-            holidayName: holidayName,
-            isWeekend: isWeekend,
-            date: normalizedDate,
-          ),
+          const SizedBox(height: 12),
+          if (record != null)
+            _RecordTile(record: record)
+          else
+            _WeekdayText(date: normalizedDate),
         ],
       ),
     );
@@ -112,23 +122,22 @@ class _DayInfoContent extends StatelessWidget {
 class _DateHeader extends StatelessWidget {
   const _DateHeader({
     required this.date,
-    required this.holidayName,
+    required this.holidays,
     required this.isWeekend,
     required this.hasHolidayRecord,
   });
 
   final DateTime date;
-  final String? holidayName;
+  final Map<DateTime, String> holidays;
   final bool isWeekend;
   final bool hasHolidayRecord;
 
   @override
   Widget build(BuildContext context) {
+    final holidayName = HolidayService.getHolidayName(date, holidays);
     // 공휴일 기록이 있거나, API 공휴일이거나, 주말이면 secondary 색상 적용
     final isSpecialDay = hasHolidayRecord || holidayName != null || isWeekend;
-    final dateColor = isSpecialDay
-        ? ThemeService.secondary
-        : ThemeService.black900;
+    final dateColor = isSpecialDay ? ThemeService.secondary : ThemeService.black900;
 
     final label = DateFormat('M월 d일 EEEE', 'ko_KR').format(date);
 
@@ -140,81 +149,151 @@ class _DateHeader extends StatelessWidget {
   }
 }
 
-class _StatusMessage extends StatelessWidget {
-  const _StatusMessage({
-    required this.record,
-    required this.holidayName,
-    required this.isWeekend,
-    required this.date,
-  });
+class _RecordTile extends StatelessWidget {
+  const _RecordTile({required this.record});
 
-  final WorkRecord? record;
-  final String? holidayName;
-  final bool isWeekend;
-  final DateTime date;
+  final WorkRecord record;
+
+  Color get _accentColor => switch (record.type) {
+    WorkType.work => ThemeService.primary,
+    WorkType.vacation => ThemeService.vacation,
+    WorkType.holiday => ThemeService.secondary,
+  };
+
+  PhosphorIconData get _icon => switch (record.type) {
+    WorkType.work => PhosphorIcons.briefcase(),
+    WorkType.vacation => PhosphorIcons.umbrella(),
+    WorkType.holiday => PhosphorIcons.calendarX(),
+  };
+
+  String get _typeLabel => switch (record.type) {
+    WorkType.work => '근무',
+    WorkType.vacation => '연차',
+    WorkType.holiday => '휴일',
+  };
 
   @override
   Widget build(BuildContext context) {
-    final message = _resolveMessage();
-    final color = _resolveColor();
-
-    return Column(
-      children: [
-        Text(message, style: ThemeService.headline.copyWith(color: color)),
-        if (_shouldShowMemo && record?.memo != null && record!.memo!.isNotEmpty)
-          Padding(
-            padding: const EdgeInsets.only(top: 4),
-            child: Text(
-              record!.memo!,
-              style: ThemeService.body2.copyWith(color: ThemeService.black500),
+    return Container(
+      clipBehavior: Clip.antiAlias,
+      decoration: BoxDecoration(
+        color: ThemeService.black100,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: IntrinsicHeight(
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Container(width: 4, color: _accentColor),
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildTypeHeader(),
+                    const SizedBox(height: 8),
+                    _buildMainContent(),
+                    if (record.memo != null && record.memo!.isNotEmpty) ...[
+                      const SizedBox(height: 4),
+                      Text(
+                        record.memo!,
+                        style: ThemeService.caption.copyWith(
+                          color: ThemeService.black500,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
             ),
-          ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTypeHeader() {
+    return Row(
+      children: [
+        PhosphorIcon(_icon, color: _accentColor, size: 14),
+        const SizedBox(width: 6),
+        Text(
+          _typeLabel,
+          style: ThemeService.caption.copyWith(color: _accentColor),
+        ),
       ],
     );
   }
 
-  bool get _shouldShowMemo =>
-      record?.type == WorkType.vacation || record?.type == WorkType.holiday;
+  Widget _buildMainContent() {
+    return switch (record.type) {
+      WorkType.work => _buildWorkContent(),
+      WorkType.vacation => _buildSimpleContent('오늘은 휴가에요'),
+      WorkType.holiday => _buildSimpleContent('오늘은 휴일이에요'),
+    };
+  }
 
-  // 우선순위에 따라 메시지 결정
-  String _resolveMessage() {
-    // 1순위: WorkType.holiday 기록
-    if (record?.type == WorkType.holiday) return '오늘은 휴일이에요!';
+  Widget _buildWorkContent() {
+    final start = record.startTime;
+    final end = record.endTime;
 
-    // 2순위: WorkType.vacation 기록
-    if (record?.type == WorkType.vacation) return '오늘은 휴가에요!';
-
-    // 3순위: WorkType.work 기록
-    if (record?.type == WorkType.work) {
-      return '${_formatDuration(record!.workedDuration)} 근무했어요!';
+    if (start == null || end == null) {
+      return Text(
+        '시간 정보 없음',
+        style: ThemeService.body2.copyWith(color: ThemeService.black600),
+      );
     }
 
-    // 4순위: API 공휴일
-    if (holidayName != null) return '오늘은 $holidayName이에요!';
-
-    // 5순위: 주말
-    if (isWeekend) return '오늘은 ${_weekdayLabel(date.weekday)}이에요!';
-
-    // 6순위: 기록 없는 평일
-    return '근무 기록이 없어요!';
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          '${_formatTime(start)}  →  ${_formatTime(end)}',
+          style: ThemeService.body2.copyWith(color: ThemeService.black600),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          _formatDuration(record.workedDuration),
+          style: ThemeService.subtitle.copyWith(color: ThemeService.black900),
+        ),
+      ],
+    );
   }
 
-  // 우선순위에 따라 색상 결정
-  Color _resolveColor() {
-    if (record?.type == WorkType.holiday) return ThemeService.black700;
-    if (record?.type == WorkType.vacation) return ThemeService.vacation;
-    if (record?.type == WorkType.work) return ThemeService.primary;
-    if (holidayName != null) return ThemeService.secondary;
-    if (isWeekend) return ThemeService.secondary;
-    return ThemeService.black400;
+  Widget _buildSimpleContent(String label) {
+    return Text(
+      label,
+      style: ThemeService.body1.copyWith(color: ThemeService.black700),
+    );
   }
 
-  // Duration → "9시간 11분" / "9시간" (분이 0이면 분 생략)
+  String _formatTime(TimeOfDay time) {
+    final h = time.hour.toString().padLeft(2, '0');
+    final m = time.minute.toString().padLeft(2, '0');
+    return '$h:$m';
+  }
+
   String _formatDuration(Duration duration) {
     final hours = duration.inHours;
     final minutes = duration.inMinutes.remainder(60);
     if (minutes == 0) return '$hours시간';
     return '$hours시간 $minutes분';
+  }
+}
+
+class _WeekdayText extends StatelessWidget {
+  const _WeekdayText({required this.date});
+
+  final DateTime date;
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      '${_weekdayLabel(date.weekday)}이에요',
+      style: ThemeService.headline.copyWith(color: ThemeService.black300),
+      textAlign: TextAlign.center,
+    );
   }
 
   String _weekdayLabel(int weekday) {
@@ -226,7 +305,53 @@ class _StatusMessage extends StatelessWidget {
       DateTime.friday => '금요일',
       DateTime.saturday => '토요일',
       DateTime.sunday => '일요일',
-      _ => '알 수 없음',
+      _ => '',
     };
+  }
+}
+
+class _DeleteButton extends StatelessWidget {
+  const _DeleteButton({required this.recordId});
+
+  final String recordId;
+
+  Future<void> _confirmDelete(BuildContext context) async {
+    final confirmed = await showCupertinoDialog<bool>(
+      context: context,
+      builder: (ctx) => CupertinoAlertDialog(
+        title: const Text('기록 삭제'),
+        content: const Text('이 날의 근태 기록을 삭제할까요?'),
+        actions: [
+          CupertinoDialogAction(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('취소'),
+          ),
+          CupertinoDialogAction(
+            isDestructiveAction: true,
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('삭제'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && context.mounted) {
+      context.read<CalendarBloc>().add(CalendarRecordDeleted(recordId));
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: () => _confirmDelete(context),
+      child: Padding(
+        padding: const EdgeInsets.all(4),
+        child: PhosphorIcon(
+          PhosphorIcons.trash(),
+          color: ThemeService.secondary,
+          size: 24,
+        ),
+      ),
+    );
   }
 }

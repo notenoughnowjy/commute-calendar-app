@@ -6,6 +6,36 @@ class AuthDataSource {
 
   const AuthDataSource(this._supabase);
 
+  Future<UserModel> signUp(
+    String email,
+    String password,
+    String name,
+    String? department,
+  ) async {
+    final response = await _supabase.auth.signUp(
+      email: email,
+      password: password,
+    );
+
+    final userId = response.user?.id;
+    if (userId == null) {
+      throw Exception('회원가입에 실패했습니다. 잠시 후 다시 시도해주세요.');
+    }
+
+    final data = await _supabase
+        .from('users')
+        .insert({
+          'id': userId,
+          'email': email,
+          'name': name,
+          'department': ?department,
+        })
+        .select()
+        .single();
+
+    return UserModel.fromJson(data);
+  }
+
   Future<UserModel> signIn(String email, String password) async {
     final response = await _supabase.auth.signInWithPassword(
       email: email,
@@ -17,7 +47,11 @@ class AuthDataSource {
       throw Exception('로그인에 실패했습니다. 이메일 또는 비밀번호를 확인해주세요.');
     }
 
-    final data = await _supabase.from('users').select().eq('id', userId).single();
+    final data = await _supabase
+        .from('users')
+        .select()
+        .eq('id', userId)
+        .single();
     return UserModel.fromJson(data);
   }
 
@@ -37,15 +71,17 @@ class AuthDataSource {
     return UserModel.fromJson(data);
   }
 
-  Stream<UserModel?> get authStateStream {
+  Stream<(UserModel?, bool)> get authStateStream {
     return _supabase.auth.onAuthStateChange.asyncMap((data) async {
-      if (data.event == AuthChangeEvent.signedIn && data.session?.user != null) {
-        final userId = data.session!.user.id;
-        final userData =
-            await _supabase.from('users').select().eq('id', userId).single();
-        return UserModel.fromJson(userData);
+      final isAutoLogin = data.event == AuthChangeEvent.initialSession;
+
+      if ((data.event == AuthChangeEvent.signedIn || isAutoLogin) &&
+          data.session?.user != null) {
+        final user = await getCurrentUser();
+        if (user == null) throw Exception('사용자 정보를 불러올 수 없습니다.');
+        return (user, isAutoLogin);
       }
-      return null;
+      return (null, false);
     });
   }
 }
