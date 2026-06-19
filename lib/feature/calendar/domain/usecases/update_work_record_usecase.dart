@@ -6,7 +6,7 @@ class UpdateWorkRecordUseCase {
 
   final ICalendarRepository _repository;
 
-  Future<void> call(WorkRecord record) {
+  Future<void> call(WorkRecordEntity record) {
     return _repository.updateRecord(record);
   }
 }

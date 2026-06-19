@@ -26,7 +26,7 @@ class WorkRecordDataSource {
     return rows.map((row) => WorkRecordModel.fromJson(row)).toList();
   }
 
-  Future<void> addRecord(WorkRecord record) async {
+  Future<void> addRecord(WorkRecordEntity record) async {
     final userId = _supabase.auth.currentUser!.id;
     final payload = WorkRecordModel.fromEntity(record).toJson()
       ..['user_id'] = userId;
@@ -34,7 +34,7 @@ class WorkRecordDataSource {
     await _supabase.from('work_records').insert(payload);
   }
 
-  Future<void> updateRecord(WorkRecord record) async {
+  Future<void> updateRecord(WorkRecordEntity record) async {
     final payload = WorkRecordModel.fromEntity(record).toJson()
       ..['updated_at'] = DateTime.now().toIso8601String();
 

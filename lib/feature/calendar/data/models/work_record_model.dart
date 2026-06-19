@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../domain/entities/work_record_entity.dart';
 
-class WorkRecordModel extends WorkRecord {
+class WorkRecordModel extends WorkRecordEntity {
   const WorkRecordModel({
     required super.id,
     required super.date,
@@ -23,7 +23,7 @@ class WorkRecordModel extends WorkRecord {
     );
   }
 
-  factory WorkRecordModel.fromEntity(WorkRecord entity) {
+  factory WorkRecordModel.fromEntity(WorkRecordEntity entity) {
     return WorkRecordModel(
       id: entity.id,
       date: entity.date,

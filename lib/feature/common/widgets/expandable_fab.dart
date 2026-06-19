@@ -103,7 +103,14 @@ class _ExpandableFabState extends State<ExpandableFab>
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              ..._buildMiniFabs(context),
+              IgnorePointer(
+                ignoring: !_isOpen,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: _buildMiniFabs(context),
+                ),
+              ),
               const SizedBox(height: 12),
               _buildMainFab(),
             ],

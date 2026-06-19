@@ -22,18 +22,14 @@ class AuthDataSource {
       throw Exception('회원가입에 실패했습니다. 잠시 후 다시 시도해주세요.');
     }
 
-    final data = await _supabase
-        .from('users')
-        .insert({
-          'id': userId,
-          'email': email,
-          'name': name,
-          'department': ?department,
-        })
-        .select()
-        .single();
+    await _supabase.from('users').insert({
+      'id': userId,
+      'email': email,
+      'name': name,
+      'department': ?department,
+    });
 
-    return UserModel.fromJson(data);
+    return await signIn(email, password);
   }
 
   Future<UserModel> signIn(String email, String password) async {
@@ -75,8 +71,7 @@ class AuthDataSource {
     return _supabase.auth.onAuthStateChange.asyncMap((data) async {
       final isAutoLogin = data.event == AuthChangeEvent.initialSession;
 
-      if ((data.event == AuthChangeEvent.signedIn || isAutoLogin) &&
-          data.session?.user != null) {
+      if (data.session?.user != null) {
         final user = await getCurrentUser();
         if (user == null) throw Exception('사용자 정보를 불러올 수 없습니다.');
         return (user, isAutoLogin);

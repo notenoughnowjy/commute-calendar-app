@@ -6,8 +6,10 @@ import 'package:commute_calendar/feature/auth/domain/usecases/get_auth_state_str
 import 'package:commute_calendar/feature/auth/domain/usecases/get_current_user_usecase.dart';
 import 'package:commute_calendar/feature/auth/domain/usecases/sign_in_usecase.dart';
 import 'package:commute_calendar/feature/auth/domain/usecases/sign_out_usecase.dart';
+import 'package:commute_calendar/feature/auth/domain/usecases/sign_up_usecase.dart';
 import 'package:commute_calendar/feature/auth/presentation/bloc/auth_bloc.dart';
 import 'package:commute_calendar/feature/auth/presentation/sign_in/bloc/sign_in_bloc.dart';
+import 'package:commute_calendar/feature/auth/presentation/sign_up/bloc/sign_up_bloc.dart';
 import 'package:commute_calendar/feature/calendar/data/datasources/work_record_data_source.dart';
 import 'package:commute_calendar/feature/calendar/data/repositories/calendar_repository_impl.dart';
 import 'package:commute_calendar/feature/calendar/domain/repositories/i_calendar_repository.dart';
@@ -51,6 +53,12 @@ Future<void> setupServiceLocator() async {
       getAuthStateStream: getIt<GetAuthStateStreamUseCase>(),
       signOut: getIt<SignOutUseCase>(),
     ),
+  );
+  getIt.registerFactory<SignUpUseCase>(
+    () => SignUpUseCase(getIt<IAuthRepository>()),
+  );
+  getIt.registerFactory<SignUpBloc>(
+    () => SignUpBloc(signUp: getIt<SignUpUseCase>()),
   );
   getIt.registerFactory<SignInBloc>(
     () => SignInBloc(signIn: getIt<SignInUseCase>()),

@@ -6,7 +6,7 @@ class GetMonthlyRecordsUseCase {
 
   final ICalendarRepository _repository;
 
-  Future<List<WorkRecord>> call(int year, int month) {
+  Future<List<WorkRecordEntity>> call(int year, int month) {
     return _repository.getRecordsByMonth(year, month);
   }
 }

@@ -39,7 +39,6 @@ class CalendarBloc extends Bloc<CalendarEvent, CalendarState> {
     CalendarMonthChanged event,
     Emitter<CalendarState> emit,
   ) async {
-    emit(const CalendarLoading());
     await _loadMonth(event.month, emit);
   }
 
@@ -58,8 +57,14 @@ class CalendarBloc extends Bloc<CalendarEvent, CalendarState> {
     Emitter<CalendarState> emit,
   ) async {
     if (state is! CalendarLoaded) return;
-    await _addWorkRecord(event.record);
-    await _loadMonth((state as CalendarLoaded).focusedMonth, emit);
+    final loaded = state as CalendarLoaded;
+    try {
+      await _addWorkRecord(event.record);
+      emit(const CalendarRecordSaved('기록이 추가됐습니다.'));
+      await _loadMonth(loaded.focusedMonth, emit);
+    } catch (e) {
+      emit(CalendarError('기록 추가 중 오류가 발생했습니다.'));
+    }
   }
 
   Future<void> _onRecordUpdated(
@@ -67,8 +72,14 @@ class CalendarBloc extends Bloc<CalendarEvent, CalendarState> {
     Emitter<CalendarState> emit,
   ) async {
     if (state is! CalendarLoaded) return;
-    await _updateWorkRecord(event.record);
-    await _loadMonth((state as CalendarLoaded).focusedMonth, emit);
+    final loaded = state as CalendarLoaded;
+    try {
+      await _updateWorkRecord(event.record);
+      emit(const CalendarRecordSaved('기록이 수정됐습니다.'));
+      await _loadMonth(loaded.focusedMonth, emit);
+    } catch (e) {
+      emit(CalendarError('기록 수정 중 오류가 발생했습니다.'));
+    }
   }
 
   Future<void> _onRecordDeleted(
@@ -76,8 +87,14 @@ class CalendarBloc extends Bloc<CalendarEvent, CalendarState> {
     Emitter<CalendarState> emit,
   ) async {
     if (state is! CalendarLoaded) return;
-    await _deleteWorkRecord(event.id);
-    await _loadMonth((state as CalendarLoaded).focusedMonth, emit);
+    final loaded = state as CalendarLoaded;
+    try {
+      await _deleteWorkRecord(event.id);
+      emit(const CalendarRecordRemoved());
+      await _loadMonth(loaded.focusedMonth, emit);
+    } catch (e) {
+      emit(CalendarError('기록 삭제 중 오류가 발생했습니다.'));
+    }
   }
 
   Future<void> _loadMonth(DateTime month, Emitter<CalendarState> emit) async {

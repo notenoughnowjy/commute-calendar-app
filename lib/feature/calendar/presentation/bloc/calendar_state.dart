@@ -30,13 +30,13 @@ class CalendarLoaded extends CalendarState {
   final DateTime selectedDate;
 
   // 날짜(년월일) → 기록 매핑. 키는 반드시 normalize된 DateTime(y, m, d) 사용
-  final Map<DateTime, WorkRecord> records;
+  final Map<DateTime, WorkRecordEntity> records;
   final MonthlyStats stats;
 
   CalendarLoaded copyWith({
     DateTime? focusedMonth,
     DateTime? selectedDate,
-    Map<DateTime, WorkRecord>? records,
+    Map<DateTime, WorkRecordEntity>? records,
     MonthlyStats? stats,
   }) {
     return CalendarLoaded(
@@ -58,4 +58,17 @@ class CalendarError extends CalendarState {
 
   @override
   List<Object?> get props => [message];
+}
+
+class CalendarRecordSaved extends CalendarState {
+  const CalendarRecordSaved(this.message);
+
+  final String message;
+
+  @override
+  List<Object?> get props => [message];
+}
+
+class CalendarRecordRemoved extends CalendarState {
+  const CalendarRecordRemoved();
 }

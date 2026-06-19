@@ -16,7 +16,7 @@ class CalendarWidget extends StatefulWidget {
 
   final DateTime focusedMonth;
   final DateTime selectedDate;
-  final Map<DateTime, WorkRecord> records;
+  final Map<DateTime, WorkRecordEntity> records;
   final void Function(DateTime month) onMonthChanged;
   final void Function(DateTime date) onDateSelected;
 
@@ -49,7 +49,7 @@ class _CalendarWidgetState extends State<CalendarWidget> {
   DateTime _normalize(DateTime date) =>
       DateTime(date.year, date.month, date.day);
 
-  WorkRecord? _recordFor(DateTime day) => widget.records[_normalize(day)];
+  WorkRecordEntity? _recordFor(DateTime day) => widget.records[_normalize(day)];
 
   bool _isApiHoliday(DateTime day) => HolidayService.isHoliday(day, _holidays);
 
@@ -132,7 +132,7 @@ class _CalendarWidgetState extends State<CalendarWidget> {
 
   Widget _buildDateCircle(
     DateTime day, {
-    required WorkRecord? record,
+    required WorkRecordEntity? record,
     required bool isToday,
     required bool isSelected,
     required bool isWeekendOrHol,
@@ -142,13 +142,12 @@ class _CalendarWidgetState extends State<CalendarWidget> {
     Color textColor;
     FontWeight fontWeight = FontWeight.w400;
 
-    if (isToday) {
+    if (isSelected) {
       bgColor = ThemeService.primary;
       textColor = ThemeService.white;
       fontWeight = FontWeight.w600;
-    } else if (isSelected) {
-      bgColor = ThemeService.black500;
-      textColor = ThemeService.white;
+    } else if (isToday) {
+      textColor = ThemeService.primary;
       fontWeight = FontWeight.w600;
     } else if (isOutside) {
       textColor = ThemeService.black400;
@@ -169,7 +168,12 @@ class _CalendarWidgetState extends State<CalendarWidget> {
     return Container(
       width: 28,
       height: 28,
-      decoration: BoxDecoration(shape: BoxShape.circle, color: bgColor),
+      decoration: isToday && !isSelected
+          ? BoxDecoration(
+              shape: BoxShape.circle,
+              border: Border.all(color: ThemeService.primary, width: 1.5),
+            )
+          : BoxDecoration(shape: BoxShape.circle, color: bgColor),
       child: Center(
         child: Text(
           '${day.day}',
@@ -182,7 +186,7 @@ class _CalendarWidgetState extends State<CalendarWidget> {
     );
   }
 
-  Widget _buildCellLabel(WorkRecord? record, String? holidayName) {
+  Widget _buildCellLabel(WorkRecordEntity? record, String? holidayName) {
     if (record != null) {
       return switch (record.type) {
         WorkType.work => Text(

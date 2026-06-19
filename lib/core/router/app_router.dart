@@ -4,6 +4,7 @@ import 'package:commute_calendar/feature/auth/presentation/bloc/auth_bloc.dart';
 import 'package:commute_calendar/feature/auth/presentation/bloc/auth_state.dart';
 import 'package:commute_calendar/feature/auth/presentation/pages/splash_page.dart';
 import 'package:commute_calendar/feature/auth/presentation/sign_in/pages/sign_in_page.dart';
+import 'package:commute_calendar/feature/auth/presentation/sign_up/pages/sign_up_page.dart';
 import 'package:commute_calendar/feature/calendar/presentation/pages/calendar_page.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
@@ -21,11 +22,12 @@ GoRouter createAppRouter(AuthBloc authBloc) {
       }
 
       if (authState is AuthUnauthenticated) {
-        return location == '/sign-in' ? null : '/sign-in';
+        final isOnAuthPage = location == '/sign-in' || location == '/sign-up';
+        return isOnAuthPage ? null : '/sign-in';
       }
 
       if (authState is AuthAuthenticated) {
-        final isOnAuthPage = location == '/splash' || location == '/sign-in';
+        final isOnAuthPage = location == '/splash' || location == '/sign-in' || location == '/sign-up';
         return isOnAuthPage ? '/calendar' : null;
       }
 
@@ -34,6 +36,7 @@ GoRouter createAppRouter(AuthBloc authBloc) {
     routes: [
       GoRoute(path: '/splash', builder: (context, state) => const SplashPage()),
       GoRoute(path: '/sign-in', builder: (context, state) => const SignInPage()),
+      GoRoute(path: '/sign-up', builder: (context, state) => const SignUpPage()),
       GoRoute(path: '/calendar', builder: (context, state) => const CalendarPage()),
     ],
   );

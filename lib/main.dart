@@ -8,6 +8,7 @@ import 'package:go_router/go_router.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:toastification/toastification.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -53,13 +54,15 @@ class _MyAppState extends State<MyApp> {
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider.value(
-      value: _authBloc,
-      child: MaterialApp.router(
-        debugShowCheckedModeBanner: false,
-        title: 'Commute Calendar',
-        theme: AppTheme.lightTheme,
-        routerConfig: _router,
+    return ToastificationWrapper(
+      child: BlocProvider.value(
+        value: _authBloc,
+        child: MaterialApp.router(
+          debugShowCheckedModeBanner: false,
+          title: 'Commute Calendar',
+          theme: AppTheme.lightTheme,
+          routerConfig: _router,
+        ),
       ),
     );
   }

@@ -15,15 +15,15 @@ class WorkRecordBottomSheet extends StatefulWidget {
 
   final DateTime selectedDate;
   final WorkType workType;
-  final WorkRecord? existingRecord;
+  final WorkRecordEntity? existingRecord;
 
-  static Future<WorkRecord?> show({
+  static Future<WorkRecordEntity?> show({
     required BuildContext context,
     required DateTime selectedDate,
     required WorkType workType,
-    WorkRecord? existingRecord,
+    WorkRecordEntity? existingRecord,
   }) {
-    return showModalBottomSheet<WorkRecord>(
+    return showModalBottomSheet<WorkRecordEntity>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
@@ -117,7 +117,7 @@ class _WorkRecordBottomSheetState extends State<WorkRecordBottomSheet> {
         DateTime.now().millisecondsSinceEpoch.toString();
     final memo = _memoController.text.trim();
 
-    final record = WorkRecord(
+    final record = WorkRecordEntity(
       id: id,
       date: widget.selectedDate,
       type: widget.workType,

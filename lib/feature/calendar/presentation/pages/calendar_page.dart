@@ -1,5 +1,8 @@
 import 'package:commute_calendar/core/di/service_locator.dart';
+import 'package:commute_calendar/core/services/toast_service.dart';
 import 'package:commute_calendar/core/theme/theme_service.dart';
+import 'package:commute_calendar/feature/auth/presentation/bloc/auth_bloc.dart';
+import 'package:commute_calendar/feature/auth/presentation/bloc/auth_state.dart';
 import 'package:commute_calendar/feature/calendar/presentation/bloc/calendar_bloc.dart';
 import 'package:commute_calendar/feature/calendar/presentation/bloc/calendar_event.dart';
 import 'package:commute_calendar/feature/calendar/presentation/bloc/calendar_state.dart';
@@ -30,60 +33,101 @@ class _CalendarView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: ThemeService.white,
-      body: SafeArea(
-        child: Stack(
-          children: [
-            Column(
-              children: [
-                const _MonthHeader(),
-                Expanded(
-                  child: SingleChildScrollView(
-                    child: Column(
-                      children: [
-                        const _CalendarLegend(),
-                        BlocBuilder<CalendarBloc, CalendarState>(
-                          builder: (context, state) {
-                            if (state is! CalendarLoaded) {
-                              return const SizedBox(
-                                height: 480,
-                                child: Center(
-                                  child: CircularProgressIndicator(
-                                    color: ThemeService.primary,
-                                    strokeWidth: 2,
+    return MultiBlocListener(
+      listeners: [
+        BlocListener<AuthBloc, AuthState>(
+          listener: (context, state) {
+            if (state is AuthAuthenticated && state.isAutoLogin) {
+              ToastService.show(
+                context: context,
+                message: '자동로그인됐습니다.',
+              );
+            } else if (state is AuthUnauthenticated) {
+              ToastService.show(
+                context: context,
+                message: '로그아웃됐습니다.',
+              );
+            }
+          },
+        ),
+        BlocListener<CalendarBloc, CalendarState>(
+          listener: (context, state) {
+            if (state is CalendarRecordSaved) {
+              ToastService.show(
+                context: context,
+                message: state.message,
+              );
+            } else if (state is CalendarRecordRemoved) {
+              ToastService.show(
+                context: context,
+                message: '기록이 삭제됐습니다.',
+              );
+            } else if (state is CalendarError) {
+              ToastService.show(
+                context: context,
+                message: state.message,
+                isError: true,
+              );
+            }
+          },
+        ),
+      ],
+      child: Scaffold(
+        backgroundColor: ThemeService.white,
+        body: SafeArea(
+          child: Stack(
+            children: [
+              Column(
+                children: [
+                  const _MonthHeader(),
+                  Expanded(
+                    child: SingleChildScrollView(
+                      child: Column(
+                        children: [
+                          const _CalendarLegend(),
+                          BlocBuilder<CalendarBloc, CalendarState>(
+                            buildWhen: (prev, curr) => curr is CalendarLoaded,
+                            builder: (context, state) {
+                              if (state is! CalendarLoaded) {
+                                return const SizedBox(
+                                  height: 480,
+                                  child: Center(
+                                    child: CircularProgressIndicator(
+                                      color: ThemeService.primary,
+                                      strokeWidth: 2,
+                                    ),
                                   ),
-                                ),
+                                );
+                              }
+                              return CalendarWidget(
+                                focusedMonth: state.focusedMonth,
+                                selectedDate: state.selectedDate,
+                                records: state.records,
+                                onMonthChanged: (month) => context
+                                    .read<CalendarBloc>()
+                                    .add(CalendarMonthChanged(month)),
+                                onDateSelected: (date) => context
+                                    .read<CalendarBloc>()
+                                    .add(CalendarDateSelected(date)),
                               );
-                            }
-                            return CalendarWidget(
-                              focusedMonth: state.focusedMonth,
-                              selectedDate: state.selectedDate,
-                              records: state.records,
-                              onMonthChanged: (month) => context
-                                  .read<CalendarBloc>()
-                                  .add(CalendarMonthChanged(month)),
-                              onDateSelected: (date) => context
-                                  .read<CalendarBloc>()
-                                  .add(CalendarDateSelected(date)),
-                            );
-                          },
-                        ),
-                        const _SectionDivider(),
-                        const MonthlySummaryWidget(),
-                        const _SectionDivider(),
-                        const DayInfoWidget(),
-                        const SizedBox(height: 96),
-                      ],
+                            },
+                          ),
+                          const _SectionDivider(),
+                          const MonthlySummaryWidget(),
+                          const _SectionDivider(),
+                          const DayInfoWidget(),
+                          const SizedBox(height: 96),
+                        ],
+                      ),
                     ),
                   ),
-                ),
-              ],
-            ),
-            Positioned.fill(
-              child: ExpandableFab(),
-            ),
-          ],
+                ],
+              ),
+              Positioned.fill(
+                child: ExpandableFab(),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -155,6 +199,7 @@ class _MonthHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<CalendarBloc, CalendarState>(
+      buildWhen: (prev, curr) => curr is CalendarLoaded,
       builder: (context, state) {
         final month = state is CalendarLoaded
             ? state.focusedMonth

@@ -4,8 +4,8 @@ import 'package:commute_calendar/feature/calendar/domain/entities/work_record_en
 import 'package:commute_calendar/feature/calendar/presentation/bloc/calendar_bloc.dart';
 import 'package:commute_calendar/feature/calendar/presentation/bloc/calendar_event.dart';
 import 'package:commute_calendar/feature/calendar/presentation/bloc/calendar_state.dart';
-import 'package:flutter/cupertino.dart';
-import 'package:flutter/material.dart' show TimeOfDay;
+import 'package:commute_calendar/feature/common/widgets/custom_dialog.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
@@ -42,6 +42,7 @@ class _DayInfoWidgetState extends State<DayInfoWidget> {
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<CalendarBloc, CalendarState>(
+      buildWhen: (prev, curr) => curr is CalendarLoaded,
       builder: (context, state) {
         if (state is! CalendarLoaded) return const SizedBox.shrink();
 
@@ -69,7 +70,7 @@ class _DayInfoContent extends StatelessWidget {
   });
 
   final DateTime selectedDate;
-  final Map<DateTime, WorkRecord> records;
+  final Map<DateTime, WorkRecordEntity> records;
   final Map<DateTime, String> holidays;
 
   @override
@@ -108,7 +109,11 @@ class _DayInfoContent extends StatelessWidget {
           if (record != null)
             _RecordTile(record: record)
           else
-            _WeekdayText(date: normalizedDate),
+            _EmptyRecordText(
+              holidayName: HolidayService.getHolidayName(normalizedDate, holidays),
+              date: normalizedDate,
+              isWeekend: isWeekend,
+            ),
         ],
       ),
     );
@@ -137,14 +142,29 @@ class _DateHeader extends StatelessWidget {
     final holidayName = HolidayService.getHolidayName(date, holidays);
     // 공휴일 기록이 있거나, API 공휴일이거나, 주말이면 secondary 색상 적용
     final isSpecialDay = hasHolidayRecord || holidayName != null || isWeekend;
-    final dateColor = isSpecialDay ? ThemeService.secondary : ThemeService.black900;
+    final dateColor = isSpecialDay
+        ? ThemeService.secondary
+        : ThemeService.black900;
 
     final label = DateFormat('M월 d일 EEEE', 'ko_KR').format(date);
 
-    return Text(
-      label,
-      textAlign: TextAlign.center,
-      style: ThemeService.body2.copyWith(color: dateColor),
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          label,
+          textAlign: TextAlign.center,
+          style: ThemeService.body2.copyWith(color: dateColor),
+        ),
+        if (holidayName != null) ...[
+          const SizedBox(height: 2),
+          Text(
+            holidayName,
+            textAlign: TextAlign.center,
+            style: ThemeService.caption.copyWith(color: ThemeService.secondary),
+          ),
+        ],
+      ],
     );
   }
 }
@@ -152,7 +172,7 @@ class _DateHeader extends StatelessWidget {
 class _RecordTile extends StatelessWidget {
   const _RecordTile({required this.record});
 
-  final WorkRecord record;
+  final WorkRecordEntity record;
 
   Color get _accentColor => switch (record.type) {
     WorkType.work => ThemeService.primary,
@@ -187,14 +207,22 @@ class _RecordTile extends StatelessWidget {
             Container(width: 4, color: _accentColor),
             Expanded(
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 14,
+                ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    /// Record Type
                     _buildTypeHeader(),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 4),
+
+                    /// Record Detail
                     _buildMainContent(),
-                    if (record.memo != null && record.memo!.isNotEmpty) ...[
+
+                    /// Memo
+                    if (record.hasMemo) ...[
                       const SizedBox(height: 4),
                       Text(
                         record.memo!,
@@ -216,11 +244,11 @@ class _RecordTile extends StatelessWidget {
   Widget _buildTypeHeader() {
     return Row(
       children: [
-        PhosphorIcon(_icon, color: _accentColor, size: 14),
+        PhosphorIcon(_icon, color: _accentColor, size: 16),
         const SizedBox(width: 6),
         Text(
           _typeLabel,
-          style: ThemeService.caption.copyWith(color: _accentColor),
+          style: ThemeService.body2.copyWith(color: _accentColor),
         ),
       ],
     );
@@ -229,8 +257,8 @@ class _RecordTile extends StatelessWidget {
   Widget _buildMainContent() {
     return switch (record.type) {
       WorkType.work => _buildWorkContent(),
-      WorkType.vacation => _buildSimpleContent('오늘은 휴가에요'),
-      WorkType.holiday => _buildSimpleContent('오늘은 휴일이에요'),
+      WorkType.vacation => SizedBox(),
+      WorkType.holiday => SizedBox(),
     };
   }
 
@@ -249,25 +277,22 @@ class _RecordTile extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          '${_formatTime(start)}  →  ${_formatTime(end)}',
-          style: ThemeService.body2.copyWith(color: ThemeService.black600),
+          '${_formatTime(start)}  ~  ${_formatTime(end)}',
+          style: ThemeService.body2,
         ),
         const SizedBox(height: 4),
         Text(
           _formatDuration(record.workedDuration),
-          style: ThemeService.subtitle.copyWith(color: ThemeService.black900),
+          style: ThemeService.body1.copyWith(
+            color: ThemeService.primary,
+            fontWeight: FontWeight.w600,
+          ),
         ),
       ],
     );
   }
 
-  Widget _buildSimpleContent(String label) {
-    return Text(
-      label,
-      style: ThemeService.body1.copyWith(color: ThemeService.black700),
-    );
-  }
-
+  /// TODO: TimeUtil로 옮기기
   String _formatTime(TimeOfDay time) {
     final h = time.hour.toString().padLeft(2, '0');
     final m = time.minute.toString().padLeft(2, '0');
@@ -282,31 +307,35 @@ class _RecordTile extends StatelessWidget {
   }
 }
 
-class _WeekdayText extends StatelessWidget {
-  const _WeekdayText({required this.date});
+class _EmptyRecordText extends StatelessWidget {
+  const _EmptyRecordText({
+    required this.holidayName,
+    required this.date,
+    required this.isWeekend,
+  });
 
+  final String? holidayName;
   final DateTime date;
+  final bool isWeekend;
+
+  String get _text {
+    if (holidayName != null) return holidayName!;
+    if (isWeekend) return _weekdayText;
+    return '근태 기록이 없어요!';
+  }
+
+  String get _weekdayText {
+    const names = ['월요일', '화요일', '수요일', '목요일', '금요일', '토요일', '일요일'];
+    return '${names[date.weekday - 1]}이에요';
+  }
 
   @override
   Widget build(BuildContext context) {
     return Text(
-      '${_weekdayLabel(date.weekday)}이에요',
-      style: ThemeService.headline.copyWith(color: ThemeService.black300),
+      _text,
+      style: ThemeService.subtitle.copyWith(color: ThemeService.black300),
       textAlign: TextAlign.center,
     );
-  }
-
-  String _weekdayLabel(int weekday) {
-    return switch (weekday) {
-      DateTime.monday => '월요일',
-      DateTime.tuesday => '화요일',
-      DateTime.wednesday => '수요일',
-      DateTime.thursday => '목요일',
-      DateTime.friday => '금요일',
-      DateTime.saturday => '토요일',
-      DateTime.sunday => '일요일',
-      _ => '',
-    };
   }
 }
 
@@ -316,23 +345,12 @@ class _DeleteButton extends StatelessWidget {
   final String recordId;
 
   Future<void> _confirmDelete(BuildContext context) async {
-    final confirmed = await showCupertinoDialog<bool>(
+    final confirmed = await CustomDialog.show(
       context: context,
-      builder: (ctx) => CupertinoAlertDialog(
-        title: const Text('기록 삭제'),
-        content: const Text('이 날의 근태 기록을 삭제할까요?'),
-        actions: [
-          CupertinoDialogAction(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('취소'),
-          ),
-          CupertinoDialogAction(
-            isDestructiveAction: true,
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('삭제'),
-          ),
-        ],
-      ),
+      title: '기록 삭제',
+      content: '이 날의 근태 기록을 삭제할까요?',
+      confirmLabel: '삭제',
+      isDestructive: true,
     );
 
     if (confirmed == true && context.mounted) {

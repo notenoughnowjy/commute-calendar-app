@@ -8,7 +8,7 @@ class CalendarRepositoryImpl implements ICalendarRepository {
   final WorkRecordDataSource _dataSource;
 
   @override
-  Future<List<WorkRecord>> getRecordsByMonth(int year, int month) async {
+  Future<List<WorkRecordEntity>> getRecordsByMonth(int year, int month) async {
     try {
       return await _dataSource.getRecordsByMonth(year, month);
     } catch (e) {
@@ -17,7 +17,7 @@ class CalendarRepositoryImpl implements ICalendarRepository {
   }
 
   @override
-  Future<void> addRecord(WorkRecord record) async {
+  Future<void> addRecord(WorkRecordEntity record) async {
     try {
       await _dataSource.addRecord(record);
     } catch (e) {
@@ -26,7 +26,7 @@ class CalendarRepositoryImpl implements ICalendarRepository {
   }
 
   @override
-  Future<void> updateRecord(WorkRecord record) async {
+  Future<void> updateRecord(WorkRecordEntity record) async {
     try {
       await _dataSource.updateRecord(record);
     } catch (e) {

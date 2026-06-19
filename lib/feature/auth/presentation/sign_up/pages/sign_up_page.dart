@@ -1,49 +1,57 @@
 import 'package:commute_calendar/core/di/service_locator.dart';
 import 'package:commute_calendar/core/services/toast_service.dart';
 import 'package:commute_calendar/core/theme/theme_service.dart';
-import 'package:commute_calendar/feature/auth/presentation/sign_in/bloc/sign_in_bloc.dart';
-import 'package:commute_calendar/feature/auth/presentation/sign_in/bloc/sign_in_event.dart';
-import 'package:commute_calendar/feature/auth/presentation/sign_in/bloc/sign_in_state.dart';
+import 'package:commute_calendar/feature/auth/presentation/sign_up/bloc/sign_up_bloc.dart';
+import 'package:commute_calendar/feature/auth/presentation/sign_up/bloc/sign_up_event.dart';
+import 'package:commute_calendar/feature/auth/presentation/sign_up/bloc/sign_up_state.dart';
 import 'package:commute_calendar/feature/auth/presentation/widgets/auth_text_field.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
-class SignInPage extends StatelessWidget {
-  const SignInPage({super.key});
+class SignUpPage extends StatelessWidget {
+  const SignUpPage({super.key});
 
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create: (_) => getIt<SignInBloc>(),
-      child: const _SignInView(),
+      create: (_) => getIt<SignUpBloc>(),
+      child: const _SignUpView(),
     );
   }
 }
 
-class _SignInView extends StatefulWidget {
-  const _SignInView();
+class _SignUpView extends StatefulWidget {
+  const _SignUpView();
 
   @override
-  State<_SignInView> createState() => _SignInViewState();
+  State<_SignUpView> createState() => _SignUpViewState();
 }
 
-class _SignInViewState extends State<_SignInView> {
+class _SignUpViewState extends State<_SignUpView> {
+  final _nameController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+  final _departmentController = TextEditingController();
 
   @override
   void dispose() {
+    _nameController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
+    _departmentController.dispose();
     super.dispose();
   }
 
   void _onSubmit() {
-    context.read<SignInBloc>().add(
-      SignInSubmitted(
+    context.read<SignUpBloc>().add(
+      SignUpSubmitted(
         email: _emailController.text.trim(),
         password: _passwordController.text,
+        name: _nameController.text.trim(),
+        department: _departmentController.text.trim().isEmpty
+            ? null
+            : _departmentController.text.trim(),
       ),
     );
   }
@@ -52,16 +60,19 @@ class _SignInViewState extends State<_SignInView> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: ThemeService.white,
-      body: BlocListener<SignInBloc, SignInState>(
+      body: BlocListener<SignUpBloc, SignUpState>(
         listener: (context, state) {
-          if (state is SignInFailure) {
+          if (state is SignUpFailure) {
             ToastService.show(
               context: context,
               message: state.message,
               isError: true,
             );
-          } else if (state is SignInSuccess) {
-            ToastService.show(context: context, message: '로그인됐습니다.');
+          } else if (state is SignUpSuccess) {
+            ToastService.show(
+              context: context,
+              message: '회원가입이 완료됐습니다.',
+            );
           }
         },
         child: SafeArea(
@@ -71,15 +82,18 @@ class _SignInViewState extends State<_SignInView> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const SizedBox(height: 80),
-                const Text('안녕하세요,', style: ThemeService.headline),
+                const Text('회원가입', style: ThemeService.headline),
                 const SizedBox(height: 4),
                 Text(
-                  '로그인 후 이용해주세요.',
-                  style: ThemeService.body1.copyWith(
-                    color: ThemeService.black500,
-                  ),
+                  '정보를 입력해주세요.',
+                  style: ThemeService.body1.copyWith(color: ThemeService.black500),
                 ),
                 const SizedBox(height: 48),
+                AuthTextField(
+                  controller: _nameController,
+                  label: '이름',
+                ),
+                const SizedBox(height: 16),
                 AuthTextField(
                   controller: _emailController,
                   label: '이메일',
@@ -90,13 +104,17 @@ class _SignInViewState extends State<_SignInView> {
                   controller: _passwordController,
                   label: '비밀번호',
                   obscureText: true,
-                  onSubmitted: (_) => _onSubmit(),
+                ),
+                const SizedBox(height: 16),
+                AuthTextField(
+                  controller: _departmentController,
+                  label: '부서 (선택)',
                 ),
                 const SizedBox(height: 32),
-                BlocBuilder<SignInBloc, SignInState>(
+                BlocBuilder<SignUpBloc, SignUpState>(
                   builder: (context, state) {
-                    final isLoading = state is SignInLoading;
-                    return _SignInButton(
+                    final isLoading = state is SignUpLoading;
+                    return _SignUpButton(
                       onPressed: isLoading ? null : _onSubmit,
                       isLoading: isLoading,
                     );
@@ -105,12 +123,10 @@ class _SignInViewState extends State<_SignInView> {
                 const SizedBox(height: 16),
                 Center(
                   child: TextButton(
-                    onPressed: () => context.go('/sign-up'),
+                    onPressed: () => context.go('/sign-in'),
                     child: Text(
-                      '계정이 없으신가요? 회원가입',
-                      style: ThemeService.caption.copyWith(
-                        color: ThemeService.black600,
-                      ),
+                      '이미 계정이 있으신가요? 로그인',
+                      style: ThemeService.caption.copyWith(color: ThemeService.black600),
                     ),
                   ),
                 ),
@@ -123,8 +139,8 @@ class _SignInViewState extends State<_SignInView> {
   }
 }
 
-class _SignInButton extends StatelessWidget {
-  const _SignInButton({required this.onPressed, required this.isLoading});
+class _SignUpButton extends StatelessWidget {
+  const _SignUpButton({required this.onPressed, required this.isLoading});
 
   final VoidCallback? onPressed;
   final bool isLoading;
@@ -139,9 +155,7 @@ class _SignInButton extends StatelessWidget {
         style: TextButton.styleFrom(
           backgroundColor: ThemeService.primary,
           disabledBackgroundColor: ThemeService.black300,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
-          ),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
         ),
         child: isLoading
             ? const SizedBox(
@@ -153,7 +167,7 @@ class _SignInButton extends StatelessWidget {
                 ),
               )
             : Text(
-                '로그인',
+                '회원가입',
                 style: ThemeService.body2.copyWith(
                   color: ThemeService.white,
                   fontWeight: FontWeight.w600,

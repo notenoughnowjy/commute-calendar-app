@@ -30,7 +30,7 @@ class CalendarDateSelected extends CalendarEvent {
 class CalendarRecordAdded extends CalendarEvent {
   const CalendarRecordAdded(this.record);
 
-  final WorkRecord record;
+  final WorkRecordEntity record;
 
   @override
   List<Object?> get props => [record];
@@ -39,7 +39,7 @@ class CalendarRecordAdded extends CalendarEvent {
 class CalendarRecordUpdated extends CalendarEvent {
   const CalendarRecordUpdated(this.record);
 
-  final WorkRecord record;
+  final WorkRecordEntity record;
 
   @override
   List<Object?> get props => [record];

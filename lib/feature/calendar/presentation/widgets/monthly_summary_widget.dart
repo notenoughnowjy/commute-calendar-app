@@ -11,6 +11,7 @@ class MonthlySummaryWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<CalendarBloc, CalendarState>(
+      buildWhen: (prev, curr) => curr is CalendarLoaded,
       builder: (context, state) {
         if (state is! CalendarLoaded) return const SizedBox.shrink();
         return _SummaryContent(stats: state.stats);

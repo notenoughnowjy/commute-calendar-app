@@ -2,13 +2,13 @@ import 'package:equatable/equatable.dart';
 import 'package:flutter/material.dart';
 
 enum WorkType {
-  work,      // 일반 근무
-  vacation,  // 연차
-  holiday,   // 공휴일 or 사용자 지정 휴일
+  work, // 일반 근무
+  vacation, // 연차
+  holiday, // 공휴일 or 사용자 지정 휴일
 }
 
-class WorkRecord extends Equatable {
-  const WorkRecord({
+class WorkRecordEntity extends Equatable {
+  const WorkRecordEntity({
     required this.id,
     required this.date,
     required this.type,
@@ -21,8 +21,8 @@ class WorkRecord extends Equatable {
   final DateTime date;
   final WorkType type;
   final TimeOfDay? startTime; // WorkType.work 에서만 사용
-  final TimeOfDay? endTime;   // WorkType.work 에서만 사용
-  final String? memo;         // 선택 입력 메모
+  final TimeOfDay? endTime; // WorkType.work 에서만 사용
+  final String? memo; // 선택 입력 메모
 
   Duration get workedDuration {
     return switch (type) {
@@ -32,6 +32,8 @@ class WorkRecord extends Equatable {
     };
   }
 
+  bool get hasMemo => memo != null && memo!.isNotEmpty;
+
   Duration _calcWorkDuration() {
     if (startTime == null || endTime == null) return Duration.zero;
     final startMinutes = startTime!.hour * 60 + startTime!.minute;
@@ -40,7 +42,7 @@ class WorkRecord extends Equatable {
     return diff > 0 ? Duration(minutes: diff) : Duration.zero;
   }
 
-  WorkRecord copyWith({
+  WorkRecordEntity copyWith({
     String? id,
     DateTime? date,
     WorkType? type,
@@ -48,7 +50,7 @@ class WorkRecord extends Equatable {
     TimeOfDay? endTime,
     String? memo,
   }) {
-    return WorkRecord(
+    return WorkRecordEntity(
       id: id ?? this.id,
       date: date ?? this.date,
       type: type ?? this.type,
