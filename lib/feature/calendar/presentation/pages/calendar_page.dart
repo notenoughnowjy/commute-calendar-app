@@ -39,30 +39,18 @@ class _CalendarView extends StatelessWidget {
         BlocListener<AuthBloc, AuthState>(
           listener: (context, state) {
             if (state is AuthAuthenticated && state.isAutoLogin) {
-              ToastService.show(
-                context: context,
-                message: '자동로그인됐습니다.',
-              );
+              ToastService.show(context: context, message: '자동로그인됐습니다.');
             } else if (state is AuthUnauthenticated) {
-              ToastService.show(
-                context: context,
-                message: '로그아웃됐습니다.',
-              );
+              ToastService.show(context: context, message: '로그아웃됐습니다.');
             }
           },
         ),
         BlocListener<CalendarBloc, CalendarState>(
           listener: (context, state) {
             if (state is CalendarRecordSaved) {
-              ToastService.show(
-                context: context,
-                message: state.message,
-              );
+              ToastService.show(context: context, message: state.message);
             } else if (state is CalendarRecordRemoved) {
-              ToastService.show(
-                context: context,
-                message: '기록이 삭제됐습니다.',
-              );
+              ToastService.show(context: context, message: '기록이 삭제됐습니다.');
             } else if (state is CalendarError) {
               ToastService.show(
                 context: context,
@@ -76,6 +64,7 @@ class _CalendarView extends StatelessWidget {
       child: Scaffold(
         backgroundColor: ThemeService.white,
         body: SafeArea(
+          bottom: false,
           child: Stack(
             children: [
               Column(
@@ -126,9 +115,7 @@ class _CalendarView extends StatelessWidget {
                   ),
                 ],
               ),
-              Positioned.fill(
-                child: ExpandableFab(),
-              ),
+              Positioned.fill(child: ExpandableFab()),
             ],
           ),
         ),
@@ -191,10 +178,7 @@ class _SectionDivider extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      height: 10,
-      color: ThemeService.black100,
-    );
+    return Container(height: 10, color: ThemeService.black100);
   }
 }
 
@@ -213,8 +197,9 @@ class _PrimaryAppBar extends StatelessWidget {
           GestureDetector(
             onTap: () {
               final state = context.read<CalendarBloc>().state;
-              final month =
-                  state is CalendarLoaded ? state.focusedMonth : DateTime.now();
+              final month = state is CalendarLoaded
+                  ? state.focusedMonth
+                  : DateTime.now();
               Navigator.push(
                 context,
                 MaterialPageRoute(
@@ -251,8 +236,7 @@ class _MonthHeader extends StatelessWidget {
         final label = DateFormat('yyyy년 M월').format(month);
 
         return Container(
-          color: ThemeService.white,
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
+          padding: const EdgeInsets.all(4),
           child: Row(
             children: [
               GestureDetector(
@@ -263,14 +247,14 @@ class _MonthHeader extends StatelessWidget {
                 child: Padding(
                   padding: const EdgeInsets.all(12),
                   child: PhosphorIcon(
-                    PhosphorIcons.caretLeft(),
+                    PhosphorIconsBold.caretLeft,
                     color: ThemeService.black900,
                     size: 20,
                   ),
                 ),
               ),
               Expanded(
-                child: Center(child: Text(label, style: ThemeService.subtitle)),
+                child: Center(child: Text(label, style: ThemeService.subtitle.copyWith(fontSize: 18))),
               ),
               GestureDetector(
                 onTap: () {
@@ -280,7 +264,7 @@ class _MonthHeader extends StatelessWidget {
                 child: Padding(
                   padding: const EdgeInsets.all(12),
                   child: PhosphorIcon(
-                    PhosphorIcons.caretRight(),
+                    PhosphorIconsBold.caretRight,
                     color: ThemeService.black900,
                     size: 20,
                   ),

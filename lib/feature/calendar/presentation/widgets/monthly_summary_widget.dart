@@ -29,7 +29,7 @@ class _SummaryContent extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       color: ThemeService.white,
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [

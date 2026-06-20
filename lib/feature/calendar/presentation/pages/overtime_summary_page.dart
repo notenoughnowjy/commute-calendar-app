@@ -118,6 +118,7 @@ class _OvertimeSummaryPageState extends State<OvertimeSummaryPage> {
     return Scaffold(
       backgroundColor: ThemeService.white,
       body: SafeArea(
+        bottom: false,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
@@ -175,7 +176,7 @@ class _OvertimeSummaryPageState extends State<OvertimeSummaryPage> {
             child: Padding(
               padding: const EdgeInsets.all(10),
               child: PhosphorIcon(
-                PhosphorIcons.arrowLeft(),
+                PhosphorIconsBold.caretLeft,
                 color: ThemeService.black900,
                 size: 20,
               ),
@@ -191,7 +192,6 @@ class _OvertimeSummaryPageState extends State<OvertimeSummaryPage> {
   Widget _buildMonthNav() {
     final label = DateFormat('yyyy년 M월').format(_month);
     return Container(
-      color: ThemeService.black100,
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       child: Row(
         children: [
