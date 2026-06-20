@@ -36,8 +36,12 @@
   - 사용: `getIt<ServiceType>()`로 등록된 서비스 접근
 
 ## 레이어 규칙
-- **DataSource**: 순수 데이터 요청 로직만 담당. try-catch 없음. Model 객체 반환
-- **Repository**: DataSource를 주입받아 try-catch로 예외 처리. Entity 객체 반환
+- **DataSource**: 순수 데이터 요청·반환만 담당. try-catch 없음. 계산·파싱·매핑 절대 금지.
+  - 외부(Repository)에서 준비된 값(userId, 날짜 문자열, JSON payload 등)을 받아 그대로 요청한다
+  - 응답도 raw 값(`List<Map<String, dynamic>>` 등)을 그대로 반환한다
+  - `fromJson`, `toJson`, 날짜 계산, 문자열 포맷 등 모든 변환 로직을 DataSource에 작성하지 않는다
+- **Repository**: DataSource를 주입받아 try-catch로 예외 처리. Entity 객체 반환.
+  - userId 조회, 날짜 계산·포맷, `fromJson` 파싱, `toJson` 직렬화 등 모든 변환 작업은 Repository에서 수행한다
 - **추상 인터페이스**: Repository만 인터페이스(`IXxxRepository`)를 만든다. DataSource는 추상체 없이 직접 구현
 
 ## 디자인 컨벤션

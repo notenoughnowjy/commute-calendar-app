@@ -10,9 +10,17 @@ import 'package:commute_calendar/feature/auth/domain/usecases/sign_up_usecase.da
 import 'package:commute_calendar/feature/auth/presentation/bloc/auth_bloc.dart';
 import 'package:commute_calendar/feature/auth/presentation/sign_in/bloc/sign_in_bloc.dart';
 import 'package:commute_calendar/feature/auth/presentation/sign_up/bloc/sign_up_bloc.dart';
+import 'package:commute_calendar/feature/calendar/data/datasources/overtime_data_source.dart';
 import 'package:commute_calendar/feature/calendar/data/datasources/work_record_data_source.dart';
 import 'package:commute_calendar/feature/calendar/data/repositories/calendar_repository_impl.dart';
+import 'package:commute_calendar/feature/calendar/data/repositories/overtime_repository_impl.dart';
 import 'package:commute_calendar/feature/calendar/domain/repositories/i_calendar_repository.dart';
+import 'package:commute_calendar/feature/calendar/domain/repositories/i_overtime_repository.dart';
+import 'package:commute_calendar/feature/calendar/domain/usecases/add_overtime_record_usecase.dart';
+import 'package:commute_calendar/feature/calendar/domain/usecases/calculate_overtime_stats_usecase.dart';
+import 'package:commute_calendar/feature/calendar/domain/usecases/delete_overtime_record_usecase.dart';
+import 'package:commute_calendar/feature/calendar/domain/usecases/get_overtime_records_usecase.dart';
+import 'package:commute_calendar/feature/calendar/domain/usecases/update_overtime_record_usecase.dart';
 import 'package:commute_calendar/feature/calendar/domain/usecases/add_work_record_usecase.dart';
 import 'package:commute_calendar/feature/calendar/domain/usecases/calculate_monthly_stats_usecase.dart';
 import 'package:commute_calendar/feature/calendar/domain/usecases/delete_work_record_usecase.dart';
@@ -69,7 +77,7 @@ Future<void> setupServiceLocator() async {
     WorkRecordDataSource(getIt<SupabaseClient>()),
   );
   getIt.registerSingleton<ICalendarRepository>(
-    CalendarRepositoryImpl(getIt<WorkRecordDataSource>()),
+    CalendarRepositoryImpl(getIt<WorkRecordDataSource>(), getIt<SupabaseClient>()),
   );
   getIt.registerFactory<GetMonthlyRecordsUseCase>(
     () => GetMonthlyRecordsUseCase(getIt<ICalendarRepository>()),
@@ -93,6 +101,33 @@ Future<void> setupServiceLocator() async {
       updateWorkRecord: getIt<UpdateWorkRecordUseCase>(),
       deleteWorkRecord: getIt<DeleteWorkRecordUseCase>(),
       calculateMonthlyStats: getIt<CalculateMonthlyStatsUseCase>(),
+      getOvertimeRecords: getIt<GetOvertimeRecordsUseCase>(),
+      addOvertimeRecord: getIt<AddOvertimeRecordUseCase>(),
+      updateOvertimeRecord: getIt<UpdateOvertimeRecordUseCase>(),
+      deleteOvertimeRecord: getIt<DeleteOvertimeRecordUseCase>(),
     ),
+  );
+
+  // 4. Overtime — DataSource → Repository → UseCases
+  getIt.registerSingleton<OvertimeDataSource>(
+    OvertimeDataSource(getIt<SupabaseClient>()),
+  );
+  getIt.registerSingleton<IOvertimeRepository>(
+    OvertimeRepositoryImpl(getIt<OvertimeDataSource>(), getIt<SupabaseClient>()),
+  );
+  getIt.registerFactory<GetOvertimeRecordsUseCase>(
+    () => GetOvertimeRecordsUseCase(getIt<IOvertimeRepository>()),
+  );
+  getIt.registerFactory<AddOvertimeRecordUseCase>(
+    () => AddOvertimeRecordUseCase(getIt<IOvertimeRepository>()),
+  );
+  getIt.registerFactory<UpdateOvertimeRecordUseCase>(
+    () => UpdateOvertimeRecordUseCase(getIt<IOvertimeRepository>()),
+  );
+  getIt.registerFactory<DeleteOvertimeRecordUseCase>(
+    () => DeleteOvertimeRecordUseCase(getIt<IOvertimeRepository>()),
+  );
+  getIt.registerFactory<CalculateOvertimeStatsUseCase>(
+    () => CalculateOvertimeStatsUseCase(getIt<IOvertimeRepository>()),
   );
 }

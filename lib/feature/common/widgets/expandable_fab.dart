@@ -3,6 +3,7 @@ import 'package:commute_calendar/feature/calendar/domain/entities/work_record_en
 import 'package:commute_calendar/feature/calendar/presentation/bloc/calendar_bloc.dart';
 import 'package:commute_calendar/feature/calendar/presentation/bloc/calendar_event.dart';
 import 'package:commute_calendar/feature/calendar/presentation/bloc/calendar_state.dart';
+import 'package:commute_calendar/feature/calendar/presentation/widgets/overtime_record_bottom_sheet.dart';
 import 'package:commute_calendar/feature/calendar/presentation/widgets/work_record_bottom_sheet.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -54,8 +55,7 @@ class _ExpandableFabState extends State<ExpandableFab>
     _controller.reverse();
   }
 
-  Future<void> _onMiniFabTapped(
-      BuildContext context, WorkType workType) async {
+  Future<void> _onWorkFabTapped(BuildContext context, WorkType workType) async {
     _close();
 
     final bloc = context.read<CalendarBloc>();
@@ -80,6 +80,23 @@ class _ExpandableFabState extends State<ExpandableFab>
       } else {
         bloc.add(CalendarRecordAdded(result));
       }
+    }
+  }
+
+  Future<void> _onOvertimeFabTapped(BuildContext context) async {
+    _close();
+
+    final bloc = context.read<CalendarBloc>();
+    final state = bloc.state;
+    if (state is! CalendarLoaded) return;
+
+    final result = await OvertimeRecordBottomSheet.show(
+      context: context,
+      selectedDate: state.selectedDate,
+    );
+
+    if (result != null && context.mounted) {
+      bloc.add(CalendarOvertimeAdded(result));
     }
   }
 
@@ -121,28 +138,34 @@ class _ExpandableFabState extends State<ExpandableFab>
   }
 
   List<Widget> _buildMiniFabs(BuildContext context) {
-    final items = [
+    final workItems = [
       _MiniFabItem(
         label: '근무',
         icon: PhosphorIcons.briefcase(),
         color: ThemeService.primary,
-        workType: WorkType.work,
+        onTap: () => _onWorkFabTapped(context, WorkType.work),
       ),
       _MiniFabItem(
         label: '연차',
         icon: PhosphorIcons.umbrella(),
         color: ThemeService.vacation,
-        workType: WorkType.vacation,
+        onTap: () => _onWorkFabTapped(context, WorkType.vacation),
       ),
       _MiniFabItem(
         label: '휴일',
         icon: PhosphorIcons.calendarX(),
         color: ThemeService.secondary,
-        workType: WorkType.holiday,
+        onTap: () => _onWorkFabTapped(context, WorkType.holiday),
+      ),
+      _MiniFabItem(
+        label: '특근',
+        icon: PhosphorIcons.clock(),
+        color: ThemeService.tertiary,
+        onTap: () => _onOvertimeFabTapped(context),
       ),
     ];
 
-    return items.reversed.map((item) {
+    return workItems.reversed.map((item) {
       return AnimatedBuilder(
         animation: _expandAnimation,
         builder: (context, child) {
@@ -156,21 +179,20 @@ class _ExpandableFabState extends State<ExpandableFab>
         },
         child: Padding(
           padding: const EdgeInsets.only(bottom: 8),
-          child: _buildMiniFabRow(context, item),
+          child: _buildMiniFabRow(item),
         ),
       );
     }).toList();
   }
 
-  Widget _buildMiniFabRow(BuildContext context, _MiniFabItem item) {
+  Widget _buildMiniFabRow(_MiniFabItem item) {
     return GestureDetector(
-      onTap: () => _onMiniFabTapped(context, item.workType),
+      onTap: item.onTap,
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           Container(
-            padding:
-                const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
             decoration: BoxDecoration(
               color: ThemeService.white,
               borderRadius: BorderRadius.circular(8),
@@ -255,11 +277,11 @@ class _MiniFabItem {
     required this.label,
     required this.icon,
     required this.color,
-    required this.workType,
+    required this.onTap,
   });
 
   final String label;
   final PhosphorIconData icon;
   final Color color;
-  final WorkType workType;
+  final VoidCallback onTap;
 }

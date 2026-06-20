@@ -78,59 +78,61 @@ class _SignUpViewState extends State<_SignUpView> {
         child: SafeArea(
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 28.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const SizedBox(height: 80),
-                const Text('회원가입', style: ThemeService.headline),
-                const SizedBox(height: 4),
-                Text(
-                  '정보를 입력해주세요.',
-                  style: ThemeService.body1.copyWith(color: ThemeService.black500),
-                ),
-                const SizedBox(height: 48),
-                AuthTextField(
-                  controller: _nameController,
-                  label: '이름',
-                ),
-                const SizedBox(height: 16),
-                AuthTextField(
-                  controller: _emailController,
-                  label: '이메일',
-                  keyboardType: TextInputType.emailAddress,
-                ),
-                const SizedBox(height: 16),
-                AuthTextField(
-                  controller: _passwordController,
-                  label: '비밀번호',
-                  obscureText: true,
-                ),
-                const SizedBox(height: 16),
-                AuthTextField(
-                  controller: _departmentController,
-                  label: '부서 (선택)',
-                ),
-                const SizedBox(height: 32),
-                BlocBuilder<SignUpBloc, SignUpState>(
-                  builder: (context, state) {
-                    final isLoading = state is SignUpLoading;
-                    return _SignUpButton(
-                      onPressed: isLoading ? null : _onSubmit,
-                      isLoading: isLoading,
-                    );
-                  },
-                ),
-                const SizedBox(height: 16),
-                Center(
-                  child: TextButton(
-                    onPressed: () => context.go('/sign-in'),
-                    child: Text(
-                      '이미 계정이 있으신가요? 로그인',
-                      style: ThemeService.caption.copyWith(color: ThemeService.black600),
+            child: SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const SizedBox(height: 80),
+                  const Text('회원가입', style: ThemeService.headline),
+                  const SizedBox(height: 4),
+                  Text(
+                    '정보를 입력해주세요.',
+                    style: ThemeService.body1.copyWith(color: ThemeService.black500),
+                  ),
+                  const SizedBox(height: 48),
+                  AuthTextField(
+                    controller: _nameController,
+                    label: '이름',
+                  ),
+                  const SizedBox(height: 16),
+                  AuthTextField(
+                    controller: _emailController,
+                    label: '이메일',
+                    keyboardType: TextInputType.emailAddress,
+                  ),
+                  const SizedBox(height: 16),
+                  AuthTextField(
+                    controller: _passwordController,
+                    label: '비밀번호',
+                    obscureText: true,
+                  ),
+                  const SizedBox(height: 16),
+                  AuthTextField(
+                    controller: _departmentController,
+                    label: '부서 (선택)',
+                  ),
+                  const SizedBox(height: 32),
+                  BlocBuilder<SignUpBloc, SignUpState>(
+                    builder: (context, state) {
+                      final isLoading = state is SignUpLoading;
+                      return _SignUpButton(
+                        onPressed: isLoading ? null : _onSubmit,
+                        isLoading: isLoading,
+                      );
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  Center(
+                    child: TextButton(
+                      onPressed: () => context.go('/sign-in'),
+                      child: Text(
+                        '이미 계정이 있으신가요? 로그인',
+                        style: ThemeService.caption.copyWith(color: ThemeService.black600),
+                      ),
                     ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),

@@ -50,7 +50,7 @@ class WorkRecordCommutePicker extends StatelessWidget {
   }
 
   Widget _buildToggleButton() {
-    final color = isExpanded ? ThemeService.primary : ThemeService.black500;
+    final color = isExpanded ? ThemeService.primary : ThemeService.black700;
     return GestureDetector(
       onTap: onToggle,
       behavior: HitTestBehavior.opaque,
@@ -61,7 +61,10 @@ class WorkRecordCommutePicker extends StatelessWidget {
           children: [
             PhosphorIcon(PhosphorIcons.clock(), color: color, size: 16),
             const SizedBox(width: 6),
-            Text('출퇴근 시간 입력 (선택)', style: ThemeService.caption),
+            Text(
+              '출퇴근 시간 입력 (선택)',
+              style: ThemeService.caption.copyWith(color: color),
+            ),
             const SizedBox(width: 4),
             PhosphorIcon(
               isExpanded ? PhosphorIcons.caretUp() : PhosphorIcons.caretDown(),

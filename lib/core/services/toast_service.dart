@@ -10,6 +10,7 @@ class ToastService {
     required String message,
     bool isError = false,
   }) {
+    print('===========$message==========');
     toastification.show(
       context: context,
       type: isError ? ToastificationType.error : ToastificationType.success,

@@ -67,54 +67,56 @@ class _SignInViewState extends State<_SignInView> {
         child: SafeArea(
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 28.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const SizedBox(height: 80),
-                const Text('안녕하세요,', style: ThemeService.headline),
-                const SizedBox(height: 4),
-                Text(
-                  '로그인 후 이용해주세요.',
-                  style: ThemeService.body1.copyWith(
-                    color: ThemeService.black500,
+            child: SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const SizedBox(height: 80),
+                  const Text('안녕하세요,', style: ThemeService.headline),
+                  const SizedBox(height: 4),
+                  Text(
+                    '로그인 후 이용해주세요.',
+                    style: ThemeService.body1.copyWith(
+                      color: ThemeService.black500,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 48),
-                AuthTextField(
-                  controller: _emailController,
-                  label: '이메일',
-                  keyboardType: TextInputType.emailAddress,
-                ),
-                const SizedBox(height: 16),
-                AuthTextField(
-                  controller: _passwordController,
-                  label: '비밀번호',
-                  obscureText: true,
-                  onSubmitted: (_) => _onSubmit(),
-                ),
-                const SizedBox(height: 32),
-                BlocBuilder<SignInBloc, SignInState>(
-                  builder: (context, state) {
-                    final isLoading = state is SignInLoading;
-                    return _SignInButton(
-                      onPressed: isLoading ? null : _onSubmit,
-                      isLoading: isLoading,
-                    );
-                  },
-                ),
-                const SizedBox(height: 16),
-                Center(
-                  child: TextButton(
-                    onPressed: () => context.go('/sign-up'),
-                    child: Text(
-                      '계정이 없으신가요? 회원가입',
-                      style: ThemeService.caption.copyWith(
-                        color: ThemeService.black600,
+                  const SizedBox(height: 48),
+                  AuthTextField(
+                    controller: _emailController,
+                    label: '이메일',
+                    keyboardType: TextInputType.emailAddress,
+                  ),
+                  const SizedBox(height: 16),
+                  AuthTextField(
+                    controller: _passwordController,
+                    label: '비밀번호',
+                    obscureText: true,
+                    onSubmitted: (_) => _onSubmit(),
+                  ),
+                  const SizedBox(height: 32),
+                  BlocBuilder<SignInBloc, SignInState>(
+                    builder: (context, state) {
+                      final isLoading = state is SignInLoading;
+                      return _SignInButton(
+                        onPressed: isLoading ? null : _onSubmit,
+                        isLoading: isLoading,
+                      );
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  Center(
+                    child: TextButton(
+                      onPressed: () => context.go('/sign-up'),
+                      child: Text(
+                        '계정이 없으신가요? 회원가입',
+                        style: ThemeService.caption.copyWith(
+                          color: ThemeService.black600,
+                        ),
                       ),
                     ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),

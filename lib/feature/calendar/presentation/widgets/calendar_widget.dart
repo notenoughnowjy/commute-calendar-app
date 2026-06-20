@@ -1,5 +1,6 @@
 import 'package:commute_calendar/core/services/holiday_service.dart';
 import 'package:commute_calendar/core/theme/theme_service.dart';
+import 'package:commute_calendar/feature/calendar/domain/entities/overtime_record_entity.dart';
 import 'package:commute_calendar/feature/calendar/domain/entities/work_record_entity.dart';
 import 'package:flutter/material.dart';
 import 'package:table_calendar/table_calendar.dart';
@@ -10,6 +11,7 @@ class CalendarWidget extends StatefulWidget {
     required this.focusedMonth,
     required this.selectedDate,
     required this.records,
+    required this.overtimeRecords,
     required this.onMonthChanged,
     required this.onDateSelected,
   });
@@ -17,6 +19,7 @@ class CalendarWidget extends StatefulWidget {
   final DateTime focusedMonth;
   final DateTime selectedDate;
   final Map<DateTime, WorkRecordEntity> records;
+  final Map<DateTime, List<OvertimeRecordEntity>> overtimeRecords;
   final void Function(DateTime month) onMonthChanged;
   final void Function(DateTime date) onDateSelected;
 
@@ -50,6 +53,9 @@ class _CalendarWidgetState extends State<CalendarWidget> {
       DateTime(date.year, date.month, date.day);
 
   WorkRecordEntity? _recordFor(DateTime day) => widget.records[_normalize(day)];
+
+  bool _hasOvertime(DateTime day) =>
+      widget.overtimeRecords[_normalize(day)]?.isNotEmpty ?? false;
 
   bool _isApiHoliday(DateTime day) => HolidayService.isHoliday(day, _holidays);
 
@@ -105,6 +111,7 @@ class _CalendarWidgetState extends State<CalendarWidget> {
     bool isOutside = false,
   }) {
     final record = _recordFor(day);
+    final hasOvertime = !isOutside && _hasOvertime(day);
     final isWeekendOrHol = _isWeekendOrHoliday(day);
     final holidayName = _isApiHoliday(day) && !isOutside
         ? HolidayService.getHolidayName(day, _holidays)
@@ -124,7 +131,7 @@ class _CalendarWidgetState extends State<CalendarWidget> {
             isOutside: isOutside,
           ),
           const SizedBox(height: 3),
-          if (!isOutside) _buildCellLabel(record, holidayName),
+          if (!isOutside) _buildCellLabel(record, holidayName, hasOvertime),
         ],
       ),
     );
@@ -186,9 +193,15 @@ class _CalendarWidgetState extends State<CalendarWidget> {
     );
   }
 
-  Widget _buildCellLabel(WorkRecordEntity? record, String? holidayName) {
+  Widget _buildCellLabel(
+    WorkRecordEntity? record,
+    String? holidayName,
+    bool hasOvertime,
+  ) {
+    // 메인 라벨 (근무시간·점)
+    Widget? main;
     if (record != null) {
-      return switch (record.type) {
+      main = switch (record.type) {
         WorkType.work => Text(
           _formatDuration(record.workedDuration),
           style: ThemeService.timeDisplay.copyWith(color: ThemeService.primary),
@@ -197,17 +210,31 @@ class _CalendarWidgetState extends State<CalendarWidget> {
         WorkType.vacation => _buildDot(ThemeService.vacation),
         WorkType.holiday => _buildDot(ThemeService.secondary),
       };
+    } else if (holidayName != null) {
+      main = _buildDot(ThemeService.secondary);
     }
 
-    if (holidayName != null) return _buildDot(ThemeService.secondary);
+    // 특근 점
+    final overtimeDot = hasOvertime ? _buildDot(ThemeService.tertiary) : null;
 
-    return const SizedBox.shrink();
+    if (main == null && overtimeDot == null) return const SizedBox.shrink();
+
+    if (main == null) return overtimeDot!;
+
+    if (overtimeDot == null) return main;
+
+    // 둘 다 있는 경우 — 메인 라벨과 특근 점을 나란히 표시
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [main, const SizedBox(width: 3), overtimeDot],
+    );
   }
 
   Widget _buildDot(Color color) {
     return Container(
-      width: 8,
-      height: 8,
+      width: 6,
+      height: 6,
       decoration: BoxDecoration(shape: BoxShape.circle, color: color),
     );
   }

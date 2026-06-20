@@ -1,5 +1,6 @@
 import 'package:equatable/equatable.dart';
 
+import '../../domain/entities/overtime_record_entity.dart';
 import '../../domain/entities/work_record_entity.dart';
 
 abstract class CalendarEvent extends Equatable {
@@ -27,6 +28,8 @@ class CalendarDateSelected extends CalendarEvent {
   List<Object?> get props => [date];
 }
 
+// ── 일반 근태 기록 ──────────────────────────────────────────────────────────
+
 class CalendarRecordAdded extends CalendarEvent {
   const CalendarRecordAdded(this.record);
 
@@ -47,6 +50,35 @@ class CalendarRecordUpdated extends CalendarEvent {
 
 class CalendarRecordDeleted extends CalendarEvent {
   const CalendarRecordDeleted(this.id);
+
+  final String id;
+
+  @override
+  List<Object?> get props => [id];
+}
+
+// ── 특근 기록 ───────────────────────────────────────────────────────────────
+
+class CalendarOvertimeAdded extends CalendarEvent {
+  const CalendarOvertimeAdded(this.record);
+
+  final OvertimeRecordEntity record;
+
+  @override
+  List<Object?> get props => [record];
+}
+
+class CalendarOvertimeUpdated extends CalendarEvent {
+  const CalendarOvertimeUpdated(this.record);
+
+  final OvertimeRecordEntity record;
+
+  @override
+  List<Object?> get props => [record];
+}
+
+class CalendarOvertimeDeleted extends CalendarEvent {
+  const CalendarOvertimeDeleted(this.id);
 
   final String id;
 

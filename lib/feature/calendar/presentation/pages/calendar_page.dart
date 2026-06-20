@@ -9,6 +9,7 @@ import 'package:commute_calendar/feature/calendar/presentation/bloc/calendar_sta
 import 'package:commute_calendar/feature/calendar/presentation/widgets/calendar_widget.dart';
 import 'package:commute_calendar/feature/calendar/presentation/widgets/day_info_widget.dart';
 import 'package:commute_calendar/feature/calendar/presentation/widgets/monthly_summary_widget.dart';
+import 'package:commute_calendar/feature/calendar/presentation/pages/overtime_summary_page.dart';
 import 'package:commute_calendar/feature/common/widgets/expandable_fab.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -79,6 +80,7 @@ class _CalendarView extends StatelessWidget {
             children: [
               Column(
                 children: [
+                  const _PrimaryAppBar(),
                   const _MonthHeader(),
                   Expanded(
                     child: SingleChildScrollView(
@@ -103,6 +105,7 @@ class _CalendarView extends StatelessWidget {
                                 focusedMonth: state.focusedMonth,
                                 selectedDate: state.selectedDate,
                                 records: state.records,
+                                overtimeRecords: state.overtimeRecords,
                                 onMonthChanged: (month) => context
                                     .read<CalendarBloc>()
                                     .add(CalendarMonthChanged(month)),
@@ -149,6 +152,8 @@ class _CalendarLegend extends StatelessWidget {
           _LegendItem(color: ThemeService.secondary, label: '휴일'),
           const SizedBox(width: 20),
           _LegendItem(color: ThemeService.vacation, label: '휴가'),
+          const SizedBox(width: 20),
+          _LegendItem(color: ThemeService.tertiary, label: '특근'),
         ],
       ),
     );
@@ -193,6 +198,45 @@ class _SectionDivider extends StatelessWidget {
   }
 }
 
+class _PrimaryAppBar extends StatelessWidget {
+  const _PrimaryAppBar();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      color: ThemeService.white,
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text('근태 달력', style: ThemeService.subtitle),
+          GestureDetector(
+            onTap: () {
+              final state = context.read<CalendarBloc>().state;
+              final month =
+                  state is CalendarLoaded ? state.focusedMonth : DateTime.now();
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => OvertimeSummaryPage(initialMonth: month),
+                ),
+              );
+            },
+            child: Padding(
+              padding: const EdgeInsets.all(8),
+              child: PhosphorIcon(
+                PhosphorIcons.clock(),
+                color: ThemeService.tertiary,
+                size: 24,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _MonthHeader extends StatelessWidget {
   const _MonthHeader();
 
@@ -210,7 +254,6 @@ class _MonthHeader extends StatelessWidget {
           color: ThemeService.white,
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
           child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               GestureDetector(
                 onTap: () {
@@ -226,7 +269,9 @@ class _MonthHeader extends StatelessWidget {
                   ),
                 ),
               ),
-              Text(label, style: ThemeService.subtitle),
+              Expanded(
+                child: Center(child: Text(label, style: ThemeService.subtitle)),
+              ),
               GestureDetector(
                 onTap: () {
                   final next = DateTime(month.year, month.month + 1);
