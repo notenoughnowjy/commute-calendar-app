@@ -1,4 +1,5 @@
 import 'package:commute_calendar/core/theme/theme_service.dart';
+import 'package:commute_calendar/core/utils/duration_formatter.dart';
 import 'package:commute_calendar/feature/calendar/domain/usecases/calculate_overtime_stats_usecase.dart';
 import 'package:commute_calendar/feature/common/widgets/multiplier_control.dart';
 import 'package:flutter/material.dart';
@@ -71,15 +72,20 @@ class OvertimeStatsCard extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                '합계 수당',
-                style: ThemeService.body2.copyWith(fontWeight: FontWeight.w600),
+              Flexible(
+                child: Text(
+                  '합계 수당',
+                  style: ThemeService.body2
+                      .copyWith(fontWeight: ThemeService.semiBold),
+                  overflow: TextOverflow.ellipsis,
+                ),
               ),
+              const SizedBox(width: 8),
               Text(
                 _formatAmount(totalAllowance),
                 style: ThemeService.body1.copyWith(
                   color: ThemeService.tertiary,
-                  fontWeight: FontWeight.w600,
+                  fontWeight: ThemeService.semiBold,
                 ),
               ),
             ],
@@ -110,14 +116,6 @@ class _StatRow extends StatelessWidget {
   final double multiplier;
   final ValueChanged<double> onMultiplierChanged;
 
-  String _formatDuration(Duration d) {
-    final h = d.inHours;
-    final m = d.inMinutes.remainder(60);
-    if (h == 0) return '$m분';
-    if (m == 0) return '$h시간';
-    return '$h시간 $m분';
-  }
-
   @override
   Widget build(BuildContext context) {
     return Column(
@@ -141,7 +139,14 @@ class _StatRow extends StatelessWidget {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text(_formatDuration(duration), style: ThemeService.body2),
+            Flexible(
+              child: Text(
+                DurationFormatter.long(duration),
+                style: ThemeService.body2,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            const SizedBox(width: 8),
             Text(
               OvertimeStatsCard._formatAmount(allowance),
               style: ThemeService.body2.copyWith(color: ThemeService.black700),

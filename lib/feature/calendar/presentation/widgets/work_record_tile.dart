@@ -1,4 +1,5 @@
 import 'package:commute_calendar/core/theme/theme_service.dart';
+import 'package:commute_calendar/core/utils/duration_formatter.dart';
 import 'package:commute_calendar/feature/calendar/domain/entities/work_record_entity.dart';
 import 'package:commute_calendar/feature/calendar/presentation/bloc/calendar_bloc.dart';
 import 'package:commute_calendar/feature/calendar/presentation/bloc/calendar_event.dart';
@@ -42,7 +43,7 @@ class WorkRecordTile extends StatelessWidget {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Container(width: 4, color: _accentColor),
+            Container(width: 6, color: _accentColor),
             Expanded(
               child: Padding(
                 padding: const EdgeInsets.symmetric(
@@ -62,6 +63,8 @@ class WorkRecordTile extends StatelessWidget {
                         style: ThemeService.caption.copyWith(
                           color: ThemeService.black500,
                         ),
+                        overflow: TextOverflow.ellipsis,
+                        maxLines: 2,
                       ),
                     ],
                   ],
@@ -101,10 +104,10 @@ class WorkRecordTile extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          _formatDuration(record.workedDuration),
+          DurationFormatter.long(record.workedDuration),
           style: ThemeService.body1.copyWith(
             color: ThemeService.primary,
-            fontWeight: FontWeight.w600,
+            fontWeight: ThemeService.semiBold,
           ),
         ),
         if (record.startTime != null && record.endTime != null) ...[
@@ -112,6 +115,8 @@ class WorkRecordTile extends StatelessWidget {
           Text(
             '${_formatTime(record.startTime!)}  ~  ${_formatTime(record.endTime!)}',
             style: ThemeService.body2.copyWith(color: ThemeService.black600),
+            overflow: TextOverflow.ellipsis,
+            maxLines: 1,
           ),
         ],
       ],
@@ -123,13 +128,6 @@ class WorkRecordTile extends StatelessWidget {
     final h = time.hour.toString().padLeft(2, '0');
     final m = time.minute.toString().padLeft(2, '0');
     return '$h:$m';
-  }
-
-  String _formatDuration(Duration duration) {
-    final hours = duration.inHours;
-    final minutes = duration.inMinutes.remainder(60);
-    if (minutes == 0) return '$hours시간';
-    return '$hours시간 $minutes분';
   }
 }
 

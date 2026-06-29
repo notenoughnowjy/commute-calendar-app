@@ -11,6 +11,9 @@ class ToastService {
     bool isError = false,
   }) {
     print('===========$message==========');
+    final primaryColor = isError
+        ? ThemeService.secondary
+        : ThemeService.primary;
     toastification.show(
       context: context,
       type: isError ? ToastificationType.error : ToastificationType.success,
@@ -19,10 +22,11 @@ class ToastService {
         message,
         style: ThemeService.body2.copyWith(color: ThemeService.black900),
       ),
+      borderSide: BorderSide(color: primaryColor),
       alignment: Alignment.topCenter,
       autoCloseDuration: const Duration(seconds: 3),
       showProgressBar: false,
-      primaryColor: isError ? ThemeService.secondary : ThemeService.primary,
+      primaryColor: primaryColor,
     );
   }
 }

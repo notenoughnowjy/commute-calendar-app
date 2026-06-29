@@ -172,7 +172,7 @@ class _SignUpButton extends StatelessWidget {
                 '회원가입',
                 style: ThemeService.body2.copyWith(
                   color: ThemeService.white,
-                  fontWeight: FontWeight.w600,
+                  fontWeight: ThemeService.semiBold,
                 ),
               ),
       ),

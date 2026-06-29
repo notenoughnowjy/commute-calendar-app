@@ -1,12 +1,13 @@
 import 'package:commute_calendar/core/di/service_locator.dart';
 import 'package:commute_calendar/core/theme/theme_service.dart';
+import 'package:commute_calendar/core/utils/date_formatter.dart';
+import 'package:commute_calendar/core/utils/duration_formatter.dart';
 import 'package:commute_calendar/feature/calendar/domain/entities/overtime_record_entity.dart';
 import 'package:commute_calendar/feature/calendar/domain/usecases/calculate_overtime_stats_usecase.dart';
 import 'package:commute_calendar/feature/calendar/domain/usecases/get_overtime_records_usecase.dart';
 import 'package:commute_calendar/feature/calendar/presentation/widgets/overtime_stats_card.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:intl/intl.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -115,51 +116,59 @@ class _OvertimeSummaryPageState extends State<OvertimeSummaryPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: ThemeService.white,
-      body: SafeArea(
-        bottom: false,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            _buildAppBar(),
-            _buildMonthNav(),
-            Expanded(
-              child: _isLoading
-                  ? const Center(
-                      child: CircularProgressIndicator(
-                        color: ThemeService.tertiary,
-                        strokeWidth: 2,
-                      ),
-                    )
-                  : SingleChildScrollView(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 20,
-                        vertical: 20,
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          _buildWageInput(),
-                          const SizedBox(height: 24),
-                          if (_stats != null)
-                            OvertimeStatsCard(
-                              stats: _stats!,
-                              hourlyWage: _hourlyWage,
-                              weekdayMultiplier: _weekdayMultiplier,
-                              holidayMultiplier: _holidayMultiplier,
-                              onWeekdayMultiplierChanged: _setWeekdayMultiplier,
-                              onHolidayMultiplierChanged: _setHolidayMultiplier,
-                            ),
-                          if (_records.isNotEmpty) ...[
-                            const SizedBox(height: 28),
-                            _buildRecordsList(),
+    return GestureDetector(
+      onTap: () => FocusScope.of(context).unfocus(),
+      child: Scaffold(
+        backgroundColor: ThemeService.white,
+        body: SafeArea(
+          bottom: false,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              _buildAppBar(),
+              _buildMonthNav(),
+              Expanded(
+                child: _isLoading
+                    ? const Center(
+                        child: CircularProgressIndicator(
+                          color: ThemeService.tertiary,
+                          strokeWidth: 2,
+                        ),
+                      )
+                    : SingleChildScrollView(
+                        physics: AlwaysScrollableScrollPhysics(),
+                        keyboardDismissBehavior:
+                            ScrollViewKeyboardDismissBehavior.onDrag,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 20,
+                          vertical: 20,
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            _buildWageInput(),
+                            const SizedBox(height: 24),
+                            if (_stats != null)
+                              OvertimeStatsCard(
+                                stats: _stats!,
+                                hourlyWage: _hourlyWage,
+                                weekdayMultiplier: _weekdayMultiplier,
+                                holidayMultiplier: _holidayMultiplier,
+                                onWeekdayMultiplierChanged:
+                                    _setWeekdayMultiplier,
+                                onHolidayMultiplierChanged:
+                                    _setHolidayMultiplier,
+                              ),
+                            if (_records.isNotEmpty) ...[
+                              const SizedBox(height: 28),
+                              _buildRecordsList(),
+                            ],
                           ],
-                        ],
+                        ),
                       ),
-                    ),
-            ),
-          ],
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -172,9 +181,10 @@ class _OvertimeSummaryPageState extends State<OvertimeSummaryPage> {
       child: Row(
         children: [
           GestureDetector(
+            behavior: HitTestBehavior.opaque,
             onTap: () => Navigator.pop(context),
             child: Padding(
-              padding: const EdgeInsets.all(10),
+              padding: const EdgeInsets.all(12),
               child: PhosphorIcon(
                 PhosphorIconsBold.caretLeft,
                 color: ThemeService.black900,
@@ -190,15 +200,16 @@ class _OvertimeSummaryPageState extends State<OvertimeSummaryPage> {
   }
 
   Widget _buildMonthNav() {
-    final label = DateFormat('yyyy년 M월').format(_month);
+    final label = DateFormatter.monthLabel(_month);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       child: Row(
         children: [
           GestureDetector(
+            behavior: HitTestBehavior.opaque,
             onTap: _prevMonth,
             child: Padding(
-              padding: const EdgeInsets.all(10),
+              padding: const EdgeInsets.all(12),
               child: PhosphorIcon(
                 PhosphorIcons.caretLeft(),
                 color: ThemeService.black600,
@@ -210,14 +221,17 @@ class _OvertimeSummaryPageState extends State<OvertimeSummaryPage> {
             child: Center(
               child: Text(
                 label,
-                style: ThemeService.body2.copyWith(fontWeight: FontWeight.w600),
+                style: ThemeService.body2.copyWith(
+                  fontWeight: ThemeService.semiBold,
+                ),
               ),
             ),
           ),
           GestureDetector(
+            behavior: HitTestBehavior.opaque,
             onTap: _nextMonth,
             child: Padding(
-              padding: const EdgeInsets.all(10),
+              padding: const EdgeInsets.all(12),
               child: PhosphorIcon(
                 PhosphorIcons.caretRight(),
                 color: ThemeService.black600,
@@ -277,7 +291,7 @@ class _OvertimeSummaryPageState extends State<OvertimeSummaryPage> {
         Text(
           '특근 기록',
           style: ThemeService.body2.copyWith(
-            fontWeight: FontWeight.w600,
+            fontWeight: ThemeService.semiBold,
             color: ThemeService.black700,
           ),
         ),
@@ -307,35 +321,44 @@ class _OvertimeSummaryPageState extends State<OvertimeSummaryPage> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Container(width: 4, color: ThemeService.tertiary),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    '${_formatDate(record.date)}  ·  $typeLabel',
-                    style: ThemeService.caption.copyWith(
-                      color: ThemeService.black600,
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 12,
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '${DateFormatter.dayWithShortWeekday(record.date)}  ·  $typeLabel',
+                      style: ThemeService.caption.copyWith(
+                        color: ThemeService.black600,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                      maxLines: 1,
                     ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    _formatDuration(record.workedDuration),
-                    style: ThemeService.body2.copyWith(
-                      color: ThemeService.tertiary,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  if (record.hasMemo) ...[
                     const SizedBox(height: 2),
                     Text(
-                      record.memo!,
-                      style: ThemeService.caption.copyWith(
-                        color: ThemeService.black500,
+                      DurationFormatter.long(record.workedDuration),
+                      style: ThemeService.body2.copyWith(
+                        color: ThemeService.tertiary,
+                        fontWeight: ThemeService.semiBold,
                       ),
                     ),
+                    if (record.hasMemo) ...[
+                      const SizedBox(height: 2),
+                      Text(
+                        record.memo!,
+                        style: ThemeService.caption.copyWith(
+                          color: ThemeService.black500,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                        maxLines: 2,
+                      ),
+                    ],
                   ],
-                ],
+                ),
               ),
             ),
           ],
@@ -344,14 +367,4 @@ class _OvertimeSummaryPageState extends State<OvertimeSummaryPage> {
     );
   }
 
-  String _formatDuration(Duration d) {
-    final h = d.inHours;
-    final m = d.inMinutes.remainder(60);
-    if (h == 0) return '$m분';
-    if (m == 0) return '$h시간';
-    return '$h시간 $m분';
-  }
-
-  String _formatDate(DateTime date) =>
-      DateFormat('M월 d일 (E)', 'ko_KR').format(date);
 }

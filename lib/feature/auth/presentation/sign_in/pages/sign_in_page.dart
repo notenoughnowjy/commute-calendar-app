@@ -158,7 +158,7 @@ class _SignInButton extends StatelessWidget {
                 '로그인',
                 style: ThemeService.body2.copyWith(
                   color: ThemeService.white,
-                  fontWeight: FontWeight.w600,
+                  fontWeight: ThemeService.semiBold,
                 ),
               ),
       ),

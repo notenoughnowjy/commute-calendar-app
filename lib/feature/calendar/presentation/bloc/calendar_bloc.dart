@@ -60,7 +60,10 @@ class CalendarBloc extends Bloc<CalendarEvent, CalendarState> {
     CalendarMonthChanged event,
     Emitter<CalendarState> emit,
   ) async {
-    await _loadMonth(event.month, emit);
+    final selected = state is CalendarLoaded
+        ? (state as CalendarLoaded).selectedDate
+        : DateTime.now();
+    await _loadMonth(event.month, emit, selectedDate: selected);
   }
 
   Future<void> _onDateSelected(
@@ -83,7 +86,11 @@ class CalendarBloc extends Bloc<CalendarEvent, CalendarState> {
     try {
       await _addWorkRecord(event.record);
       emit(const CalendarRecordSaved('기록이 추가됐습니다.'));
-      await _loadMonth(loaded.focusedMonth, emit);
+      await _loadMonth(
+        loaded.focusedMonth,
+        emit,
+        selectedDate: loaded.selectedDate,
+      );
     } catch (e) {
       emit(CalendarError('기록 추가 중 오류가 발생했습니다.'));
     }
@@ -98,7 +105,11 @@ class CalendarBloc extends Bloc<CalendarEvent, CalendarState> {
     try {
       await _updateWorkRecord(event.record);
       emit(const CalendarRecordSaved('기록이 수정됐습니다.'));
-      await _loadMonth(loaded.focusedMonth, emit);
+      await _loadMonth(
+        loaded.focusedMonth,
+        emit,
+        selectedDate: loaded.selectedDate,
+      );
     } catch (e) {
       emit(CalendarError('기록 수정 중 오류가 발생했습니다.'));
     }
@@ -113,7 +124,11 @@ class CalendarBloc extends Bloc<CalendarEvent, CalendarState> {
     try {
       await _deleteWorkRecord(event.id);
       emit(const CalendarRecordRemoved());
-      await _loadMonth(loaded.focusedMonth, emit);
+      await _loadMonth(
+        loaded.focusedMonth,
+        emit,
+        selectedDate: loaded.selectedDate,
+      );
     } catch (e) {
       emit(CalendarError('기록 삭제 중 오류가 발생했습니다.'));
     }
@@ -130,7 +145,11 @@ class CalendarBloc extends Bloc<CalendarEvent, CalendarState> {
     try {
       await _addOvertimeRecord(event.record);
       emit(const CalendarRecordSaved('특근 기록이 추가됐습니다.'));
-      await _loadMonth(loaded.focusedMonth, emit);
+      await _loadMonth(
+        loaded.focusedMonth,
+        emit,
+        selectedDate: loaded.selectedDate,
+      );
     } catch (e) {
       emit(CalendarError('특근 기록 추가 중 오류가 발생했습니다.'));
     }
@@ -145,7 +164,11 @@ class CalendarBloc extends Bloc<CalendarEvent, CalendarState> {
     try {
       await _updateOvertimeRecord(event.record);
       emit(const CalendarRecordSaved('특근 기록이 수정됐습니다.'));
-      await _loadMonth(loaded.focusedMonth, emit);
+      await _loadMonth(
+        loaded.focusedMonth,
+        emit,
+        selectedDate: loaded.selectedDate,
+      );
     } catch (e) {
       emit(CalendarError('특근 기록 수정 중 오류가 발생했습니다.'));
     }
@@ -160,7 +183,11 @@ class CalendarBloc extends Bloc<CalendarEvent, CalendarState> {
     try {
       await _deleteOvertimeRecord(event.id);
       emit(const CalendarRecordRemoved());
-      await _loadMonth(loaded.focusedMonth, emit);
+      await _loadMonth(
+        loaded.focusedMonth,
+        emit,
+        selectedDate: loaded.selectedDate,
+      );
     } catch (e) {
       emit(CalendarError('특근 기록 삭제 중 오류가 발생했습니다.'));
     }
@@ -168,7 +195,11 @@ class CalendarBloc extends Bloc<CalendarEvent, CalendarState> {
 
   // ── 공통 로드 ──────────────────────────────────────────────────────────────
 
-  Future<void> _loadMonth(DateTime month, Emitter<CalendarState> emit) async {
+  Future<void> _loadMonth(
+    DateTime month,
+    Emitter<CalendarState> emit, {
+    DateTime? selectedDate,
+  }) async {
     try {
       final (records, stats, overtimeList) = await (
         _getMonthlyRecords(month.year, month.month),
@@ -183,9 +214,13 @@ class CalendarBloc extends Bloc<CalendarEvent, CalendarState> {
         overtimeMap.putIfAbsent(_normalize(r.date), () => []).add(r);
       }
 
-      final currentSelected = state is CalendarLoaded
-          ? (state as CalendarLoaded).selectedDate
-          : DateTime.now();
+      // 기록 저장·삭제 후에는 state가 CalendarRecordSaved 등으로 바뀌어
+      // CalendarLoaded가 아니므로, 호출부에서 전달한 selectedDate를 우선 사용한다.
+      final currentSelected =
+          selectedDate ??
+          (state is CalendarLoaded
+              ? (state as CalendarLoaded).selectedDate
+              : DateTime.now());
 
       emit(
         CalendarLoaded(

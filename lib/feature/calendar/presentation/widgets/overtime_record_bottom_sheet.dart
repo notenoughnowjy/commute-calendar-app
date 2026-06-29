@@ -1,9 +1,9 @@
 import 'package:commute_calendar/core/services/toast_service.dart';
 import 'package:commute_calendar/core/theme/theme_service.dart';
+import 'package:commute_calendar/core/utils/date_formatter.dart';
 import 'package:commute_calendar/feature/calendar/domain/entities/overtime_record_entity.dart';
+import 'package:commute_calendar/feature/common/widgets/bottom_sheet_components.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:intl/intl.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 
 class OvertimeRecordBottomSheet extends StatefulWidget {
@@ -102,47 +102,44 @@ class _OvertimeRecordBottomSheetState
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: const BoxDecoration(
-        color: ThemeService.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      padding: EdgeInsets.only(
-        left: 24,
-        right: 24,
-        top: 24,
-        bottom: MediaQuery.of(context).viewInsets.bottom + 24,
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          _buildHandle(),
-          const SizedBox(height: 20),
-          _buildTitle(),
-          const SizedBox(height: 8),
-          _buildDateLabel(),
-          const SizedBox(height: 20),
-          _buildTypeSelector(),
-          const SizedBox(height: 20),
-          _buildDurationInput(),
-          const SizedBox(height: 16),
-          _buildMemoField(),
-          const SizedBox(height: 16),
-          _buildSaveButton(),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildHandle() {
-    return Center(
+    return GestureDetector(
+      onTap: () => FocusScope.of(context).unfocus(),
       child: Container(
-        width: 40,
-        height: 4,
-        decoration: BoxDecoration(
-          color: ThemeService.black300,
-          borderRadius: BorderRadius.circular(2),
+        decoration: const BoxDecoration(
+          color: ThemeService.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        padding: EdgeInsets.only(
+          left: 24,
+          right: 24,
+          top: 24,
+          bottom: MediaQuery.of(context).viewInsets.bottom + 24,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const BottomSheetHandle(),
+            const SizedBox(height: 20),
+            _buildTitle(),
+            const SizedBox(height: 8),
+            _buildDateLabel(),
+            const SizedBox(height: 20),
+            _buildTypeSelector(),
+            const SizedBox(height: 20),
+            _buildDurationInput(),
+            const SizedBox(height: 16),
+            BottomSheetMemoField(
+              controller: _memoController,
+              hintText: '메모를 남겨보세요. (선택)',
+            ),
+            const SizedBox(height: 16),
+            BottomSheetSaveButton(
+              isEnabled: _canSave,
+              color: ThemeService.tertiary,
+              onTap: _save,
+            ),
+          ],
         ),
       ),
     );
@@ -164,7 +161,7 @@ class _OvertimeRecordBottomSheetState
 
   Widget _buildDateLabel() {
     return Text(
-      DateFormat('yyyy년 M월 d일').format(widget.selectedDate),
+      DateFormatter.fullDate(widget.selectedDate),
       style: ThemeService.body1.copyWith(color: ThemeService.black600),
     );
   }
@@ -195,7 +192,7 @@ class _OvertimeRecordBottomSheetState
     return Row(
       children: [
         Expanded(
-          child: _buildTimeField(
+          child: BottomSheetTimeField(
             label: '시간',
             controller: _hoursController,
             onChanged: (v) =>
@@ -204,7 +201,7 @@ class _OvertimeRecordBottomSheetState
         ),
         const SizedBox(width: 12),
         Expanded(
-          child: _buildTimeField(
+          child: BottomSheetTimeField(
             label: '분',
             controller: _minutesController,
             onChanged: (v) => setState(
@@ -213,94 +210,6 @@ class _OvertimeRecordBottomSheetState
           ),
         ),
       ],
-    );
-  }
-
-  Widget _buildTimeField({
-    required String label,
-    required TextEditingController controller,
-    required void Function(String) onChanged,
-  }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(label, style: ThemeService.caption),
-        const SizedBox(height: 6),
-        TextField(
-          controller: controller,
-          keyboardType: TextInputType.number,
-          inputFormatters: [
-            FilteringTextInputFormatter.digitsOnly,
-            LengthLimitingTextInputFormatter(2),
-          ],
-          style: ThemeService.body1,
-          textAlign: TextAlign.center,
-          onChanged: onChanged,
-          decoration: InputDecoration(
-            hintText: '0',
-            hintStyle: ThemeService.body1.copyWith(
-              color: ThemeService.black400,
-            ),
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: 14,
-              vertical: 12,
-            ),
-            filled: true,
-            fillColor: ThemeService.black100,
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(10),
-              borderSide: BorderSide.none,
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildMemoField() {
-    return TextField(
-      controller: _memoController,
-      maxLength: 100,
-      maxLines: 2,
-      style: ThemeService.body2,
-      decoration: InputDecoration(
-        hintText: '메모를 남겨보세요. (선택)',
-        hintStyle: ThemeService.body2.copyWith(color: ThemeService.black400),
-        counterStyle: ThemeService.caption,
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: 14,
-          vertical: 12,
-        ),
-        filled: true,
-        fillColor: ThemeService.black100,
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(10),
-          borderSide: BorderSide.none,
-        ),
-      ),
-    );
-  }
-
-  Widget _buildSaveButton() {
-    final isEnabled = _canSave;
-    return GestureDetector(
-      onTap: isEnabled ? _save : null,
-      child: Container(
-        height: 52,
-        decoration: BoxDecoration(
-          color: isEnabled ? ThemeService.tertiary : ThemeService.black300,
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Center(
-          child: Text(
-            '저장',
-            style: ThemeService.body1.copyWith(
-              color: ThemeService.white,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ),
-      ),
     );
   }
 }
@@ -332,7 +241,8 @@ class _TypeChip extends StatelessWidget {
             label,
             style: ThemeService.body2.copyWith(
               color: isSelected ? ThemeService.white : ThemeService.black600,
-              fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
+              fontWeight:
+                  isSelected ? ThemeService.semiBold : ThemeService.regular,
             ),
           ),
         ),

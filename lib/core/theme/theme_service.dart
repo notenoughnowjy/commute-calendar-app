@@ -23,6 +23,12 @@ class ThemeService {
   static const Color black800 = Color(0xFF424242);
   static const Color black900 = Color(0xFF212121);
 
+  // ─── 폰트 웨이트 ──────────────────────────────────────────────────────────
+
+  static const FontWeight semiBold = FontWeight.w600;
+  static const FontWeight regular = FontWeight.w400;
+  static const FontWeight light = FontWeight.w300;
+
   // ─── 텍스트 스타일 (Pretendard) ──────────────────────────────────────────
   // 26 → 22 → 18 → 16 → 14 → 12 (2단위 스케일)
 
@@ -30,7 +36,7 @@ class ThemeService {
   static const TextStyle headline = TextStyle(
     fontFamily: 'Pretendard',
     fontSize: 26,
-    fontWeight: FontWeight.w600,
+    fontWeight: semiBold,
     height: 1.3,
     color: black900,
   );
@@ -39,7 +45,7 @@ class ThemeService {
   static const TextStyle subtitle = TextStyle(
     fontFamily: 'Pretendard',
     fontSize: 22,
-    fontWeight: FontWeight.w600,
+    fontWeight: semiBold,
     height: 1.4,
     color: black900,
   );
@@ -48,7 +54,7 @@ class ThemeService {
   static const TextStyle body1 = TextStyle(
     fontFamily: 'Pretendard',
     fontSize: 18,
-    fontWeight: FontWeight.w400,
+    fontWeight: regular,
     height: 1.5,
     color: black900,
   );
@@ -56,7 +62,7 @@ class ThemeService {
   static const TextStyle body2 = TextStyle(
     fontFamily: 'Pretendard',
     fontSize: 16,
-    fontWeight: FontWeight.w400,
+    fontWeight: regular,
     height: 1.5,
     color: black900,
   );
@@ -64,7 +70,7 @@ class ThemeService {
   static const TextStyle caption = TextStyle(
     fontFamily: 'Pretendard',
     fontSize: 14,
-    fontWeight: FontWeight.w300,
+    fontWeight: light,
     height: 1.5,
     color: black700,
   );
@@ -73,7 +79,7 @@ class ThemeService {
   static const TextStyle timeDisplay = TextStyle(
     fontFamily: 'Pretendard',
     fontSize: 12,
-    fontWeight: FontWeight.w600,
+    fontWeight: semiBold,
     height: 1.4,
     color: black700,
   );

@@ -60,7 +60,7 @@ class CustomDialog extends StatelessWidget {
                 Text(
                   title,
                   style: ThemeService.body1.copyWith(
-                    fontWeight: FontWeight.w600,
+                    fontWeight: ThemeService.semiBold,
                     color: accentColor,
                   ),
                 ),
@@ -113,7 +113,7 @@ class CustomDialog extends StatelessWidget {
                           confirmLabel,
                           style: ThemeService.body2.copyWith(
                             color: ThemeService.white,
-                            fontWeight: FontWeight.w600,
+                            fontWeight: ThemeService.semiBold,
                           ),
                         ),
                       ),

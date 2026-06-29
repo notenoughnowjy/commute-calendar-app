@@ -1,4 +1,5 @@
 import 'package:commute_calendar/core/theme/theme_service.dart';
+import 'package:commute_calendar/core/utils/duration_formatter.dart';
 import 'package:commute_calendar/feature/calendar/domain/entities/overtime_record_entity.dart';
 import 'package:commute_calendar/feature/calendar/presentation/bloc/calendar_bloc.dart';
 import 'package:commute_calendar/feature/calendar/presentation/bloc/calendar_event.dart';
@@ -17,13 +18,6 @@ class OvertimeTile extends StatelessWidget {
     OvertimeType.holidayWork => '휴일근무',
   };
 
-  String _formatDuration(Duration duration) {
-    final hours = duration.inHours;
-    final minutes = duration.inMinutes.remainder(60);
-    if (minutes == 0) return '$hours시간';
-    return '$hours시간 $minutes분';
-  }
-
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -36,7 +30,7 @@ class OvertimeTile extends StatelessWidget {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Container(width: 4, color: ThemeService.tertiary),
+            Container(width: 6, color: ThemeService.tertiary),
             Expanded(
               child: Padding(
                 padding: const EdgeInsets.symmetric(
@@ -49,10 +43,10 @@ class OvertimeTile extends StatelessWidget {
                     _buildTypeHeader(),
                     const SizedBox(height: 4),
                     Text(
-                      _formatDuration(record.workedDuration),
+                      DurationFormatter.long(record.workedDuration),
                       style: ThemeService.body1.copyWith(
                         color: ThemeService.tertiary,
-                        fontWeight: FontWeight.w600,
+                        fontWeight: ThemeService.semiBold,
                       ),
                     ),
                     if (record.hasMemo) ...[
@@ -62,6 +56,8 @@ class OvertimeTile extends StatelessWidget {
                         style: ThemeService.caption.copyWith(
                           color: ThemeService.black500,
                         ),
+                        overflow: TextOverflow.ellipsis,
+                        maxLines: 2,
                       ),
                     ],
                   ],

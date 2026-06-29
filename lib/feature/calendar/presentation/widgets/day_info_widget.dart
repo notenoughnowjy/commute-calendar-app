@@ -1,5 +1,6 @@
 import 'package:commute_calendar/core/services/holiday_service.dart';
 import 'package:commute_calendar/core/theme/theme_service.dart';
+import 'package:commute_calendar/core/utils/date_formatter.dart';
 import 'package:commute_calendar/feature/calendar/domain/entities/overtime_record_entity.dart';
 import 'package:commute_calendar/feature/calendar/domain/entities/work_record_entity.dart';
 import 'package:commute_calendar/feature/calendar/presentation/bloc/calendar_bloc.dart';
@@ -8,7 +9,6 @@ import 'package:commute_calendar/feature/calendar/presentation/widgets/overtime_
 import 'package:commute_calendar/feature/calendar/presentation/widgets/work_record_tile.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:intl/intl.dart';
 
 class DayInfoWidget extends StatefulWidget {
   const DayInfoWidget({super.key});
@@ -152,25 +152,12 @@ class _DateHeader extends StatelessWidget {
         ? ThemeService.secondary
         : ThemeService.black900;
 
-    final label = DateFormat('M월 d일 EEEE', 'ko_KR').format(date);
+    final label = DateFormatter.dayWithWeekday(date);
 
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Text(
-          label,
-          textAlign: TextAlign.center,
-          style: ThemeService.body2.copyWith(color: dateColor),
-        ),
-        if (holidayName != null) ...[
-          const SizedBox(height: 2),
-          Text(
-            holidayName,
-            textAlign: TextAlign.center,
-            style: ThemeService.caption.copyWith(color: ThemeService.secondary),
-          ),
-        ],
-      ],
+    return Text(
+      label,
+      textAlign: TextAlign.center,
+      style: ThemeService.body2.copyWith(color: dateColor),
     );
   }
 }

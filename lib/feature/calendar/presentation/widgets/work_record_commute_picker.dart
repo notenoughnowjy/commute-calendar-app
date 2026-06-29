@@ -163,7 +163,7 @@ class _SingleTimePicker extends StatelessWidget {
                     ':',
                     style: ThemeService.body1.copyWith(
                       color: ThemeService.black500,
-                      fontWeight: FontWeight.w600,
+                      fontWeight: ThemeService.semiBold,
                     ),
                   ),
                   Expanded(

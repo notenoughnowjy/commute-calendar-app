@@ -1,10 +1,10 @@
 import 'package:commute_calendar/core/services/toast_service.dart';
 import 'package:commute_calendar/core/theme/theme_service.dart';
+import 'package:commute_calendar/core/utils/date_formatter.dart';
 import 'package:commute_calendar/feature/calendar/domain/entities/work_record_entity.dart';
 import 'package:commute_calendar/feature/calendar/presentation/widgets/work_record_commute_picker.dart';
+import 'package:commute_calendar/feature/common/widgets/bottom_sheet_components.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:intl/intl.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 
 class WorkRecordBottomSheet extends StatefulWidget {
@@ -163,63 +163,66 @@ class _WorkRecordBottomSheetState extends State<WorkRecordBottomSheet> {
     Navigator.pop(context, record);
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      decoration: const BoxDecoration(
-        color: ThemeService.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      padding: EdgeInsets.only(
-        left: 24,
-        right: 24,
-        top: 24,
-        bottom: MediaQuery.of(context).viewInsets.bottom + 24,
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          _buildHandle(),
-          const SizedBox(height: 20),
-          _buildTitle(),
-          const SizedBox(height: 8),
-          _buildDateLabel(),
-          const SizedBox(height: 24),
-          if (widget.workType == WorkType.work) ...[
-            _buildDurationInput(),
-            const SizedBox(height: 12),
-            WorkRecordCommutePicker(
-              isExpanded: _isTimeExpanded,
-              onToggle: () =>
-                  setState(() => _isTimeExpanded = !_isTimeExpanded),
-              startHourCtrl: _startHourCtrl,
-              startMinCtrl: _startMinCtrl,
-              endHourCtrl: _endHourCtrl,
-              endMinCtrl: _endMinCtrl,
-              onStartHourChanged: (v) => setState(() => _startHour = v),
-              onStartMinChanged: (v) => setState(() => _startMinute = v),
-              onEndHourChanged: (v) => setState(() => _endHour = v),
-              onEndMinChanged: (v) => setState(() => _endMinute = v),
-            ),
-            const SizedBox(height: 16),
-          ],
-          _buildMemoField(),
-          const SizedBox(height: 16),
-          _buildSaveButton(),
-        ],
-      ),
-    );
+  void _toggleCommutePicker() {
+    FocusManager.instance.primaryFocus?.unfocus();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) setState(() => _isTimeExpanded = !_isTimeExpanded);
+    });
   }
 
-  Widget _buildHandle() {
-    return Center(
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: () => FocusScope.of(context).unfocus(),
       child: Container(
-        width: 40,
-        height: 4,
-        decoration: BoxDecoration(
-          color: ThemeService.black300,
-          borderRadius: BorderRadius.circular(2),
+        decoration: const BoxDecoration(
+          color: ThemeService.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        padding: EdgeInsets.only(
+          left: 24,
+          right: 24,
+          top: 24,
+          bottom: MediaQuery.of(context).viewInsets.bottom + 24,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const BottomSheetHandle(),
+            const SizedBox(height: 20),
+            _buildTitle(),
+            const SizedBox(height: 8),
+            _buildDateLabel(),
+            const SizedBox(height: 24),
+            if (widget.workType == WorkType.work) ...[
+              _buildDurationInput(),
+              const SizedBox(height: 12),
+              WorkRecordCommutePicker(
+                isExpanded: _isTimeExpanded,
+                onToggle: _toggleCommutePicker,
+                startHourCtrl: _startHourCtrl,
+                startMinCtrl: _startMinCtrl,
+                endHourCtrl: _endHourCtrl,
+                endMinCtrl: _endMinCtrl,
+                onStartHourChanged: (v) => setState(() => _startHour = v),
+                onStartMinChanged: (v) => setState(() => _startMinute = v),
+                onEndHourChanged: (v) => setState(() => _endHour = v),
+                onEndMinChanged: (v) => setState(() => _endMinute = v),
+              ),
+              const SizedBox(height: 16),
+            ],
+            BottomSheetMemoField(
+              controller: _memoController,
+              hintText: _memoHint,
+            ),
+            const SizedBox(height: 16),
+            BottomSheetSaveButton(
+              isEnabled: _canSave,
+              color: _accentColor,
+              onTap: _save,
+            ),
+          ],
         ),
       ),
     );
@@ -241,9 +244,8 @@ class _WorkRecordBottomSheetState extends State<WorkRecordBottomSheet> {
   }
 
   Widget _buildDateLabel() {
-    final label = DateFormat('yyyy년 M월 d일').format(widget.selectedDate);
     return Text(
-      label,
+      DateFormatter.fullDate(widget.selectedDate),
       style: ThemeService.body1.copyWith(color: ThemeService.black600),
     );
   }
@@ -252,7 +254,7 @@ class _WorkRecordBottomSheetState extends State<WorkRecordBottomSheet> {
     return Row(
       children: [
         Expanded(
-          child: _buildTimeField(
+          child: BottomSheetTimeField(
             label: '시간',
             controller: _hoursController,
             onChanged: (v) =>
@@ -261,7 +263,7 @@ class _WorkRecordBottomSheetState extends State<WorkRecordBottomSheet> {
         ),
         const SizedBox(width: 12),
         Expanded(
-          child: _buildTimeField(
+          child: BottomSheetTimeField(
             label: '분',
             controller: _minutesController,
             onChanged: (v) => setState(
@@ -273,97 +275,9 @@ class _WorkRecordBottomSheetState extends State<WorkRecordBottomSheet> {
     );
   }
 
-  Widget _buildTimeField({
-    required String label,
-    required TextEditingController controller,
-    required void Function(String) onChanged,
-  }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(label, style: ThemeService.caption),
-        const SizedBox(height: 6),
-        TextField(
-          controller: controller,
-          keyboardType: TextInputType.number,
-          inputFormatters: [
-            FilteringTextInputFormatter.digitsOnly,
-            LengthLimitingTextInputFormatter(2),
-          ],
-          style: ThemeService.body1,
-          textAlign: TextAlign.center,
-          onChanged: onChanged,
-          decoration: InputDecoration(
-            hintText: '0',
-            hintStyle: ThemeService.body1.copyWith(
-              color: ThemeService.black400,
-            ),
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: 14,
-              vertical: 12,
-            ),
-            filled: true,
-            fillColor: ThemeService.black100,
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(10),
-              borderSide: BorderSide.none,
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildMemoField() {
-    return TextField(
-      controller: _memoController,
-      maxLength: 100,
-      maxLines: 2,
-      style: ThemeService.body2,
-      decoration: InputDecoration(
-        hintText: _memoHint,
-        hintStyle: ThemeService.body2.copyWith(color: ThemeService.black400),
-        counterStyle: ThemeService.caption,
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: 14,
-          vertical: 12,
-        ),
-        filled: true,
-        fillColor: ThemeService.black100,
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(10),
-          borderSide: BorderSide.none,
-        ),
-      ),
-    );
-  }
-
   String get _memoHint => switch (widget.workType) {
     WorkType.work => '오늘 한 일을 요약해주세요. (선택)',
     WorkType.vacation => '어디로 휴가를 떠나시나요? (선택)',
     WorkType.holiday => '어떤 휴일인가요? (선택)',
   };
-
-  Widget _buildSaveButton() {
-    final isEnabled = _canSave;
-    return GestureDetector(
-      onTap: isEnabled ? _save : null,
-      child: Container(
-        height: 52,
-        decoration: BoxDecoration(
-          color: isEnabled ? _accentColor : ThemeService.black300,
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Center(
-          child: Text(
-            '저장',
-            style: ThemeService.body1.copyWith(
-              color: ThemeService.white,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ),
-      ),
-    );
-  }
 }

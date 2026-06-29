@@ -41,7 +41,7 @@ class MultiplierControl extends StatelessWidget {
             textAlign: TextAlign.center,
             style: ThemeService.body2.copyWith(
               color: ThemeService.black800,
-              fontWeight: FontWeight.w600,
+              fontWeight: ThemeService.semiBold,
             ),
           ),
         ),

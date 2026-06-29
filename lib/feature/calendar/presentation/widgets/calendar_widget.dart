@@ -1,5 +1,6 @@
 import 'package:commute_calendar/core/services/holiday_service.dart';
 import 'package:commute_calendar/core/theme/theme_service.dart';
+import 'package:commute_calendar/core/utils/duration_formatter.dart';
 import 'package:commute_calendar/feature/calendar/domain/entities/overtime_record_entity.dart';
 import 'package:commute_calendar/feature/calendar/domain/entities/work_record_entity.dart';
 import 'package:flutter/material.dart';
@@ -147,15 +148,15 @@ class _CalendarWidgetState extends State<CalendarWidget> {
   }) {
     Color bgColor = Colors.transparent;
     Color textColor;
-    FontWeight fontWeight = FontWeight.w400;
+    FontWeight fontWeight = ThemeService.regular;
 
     if (isSelected) {
       bgColor = ThemeService.primary;
       textColor = ThemeService.white;
-      fontWeight = FontWeight.w600;
+      fontWeight = ThemeService.semiBold;
     } else if (isToday) {
       textColor = ThemeService.primary;
-      fontWeight = FontWeight.w600;
+      fontWeight = ThemeService.semiBold;
     } else if (isOutside) {
       textColor = ThemeService.black400;
     } else if (isWeekendOrHol) {
@@ -185,6 +186,7 @@ class _CalendarWidgetState extends State<CalendarWidget> {
         child: Text(
           '${day.day}',
           style: ThemeService.body2.copyWith(
+            fontSize: 14,
             color: textColor,
             fontWeight: fontWeight,
           ),
@@ -202,11 +204,7 @@ class _CalendarWidgetState extends State<CalendarWidget> {
     Widget? main;
     if (record != null) {
       main = switch (record.type) {
-        WorkType.work => Text(
-          _formatDuration(record.workedDuration),
-          style: ThemeService.timeDisplay.copyWith(color: ThemeService.primary),
-          textAlign: TextAlign.center,
-        ),
+        WorkType.work => _buildDurationLabel(record.workedDuration),
         WorkType.vacation => _buildDot(ThemeService.vacation),
         WorkType.holiday => _buildDot(ThemeService.secondary),
       };
@@ -223,11 +221,21 @@ class _CalendarWidgetState extends State<CalendarWidget> {
 
     if (overtimeDot == null) return main;
 
-    // 둘 다 있는 경우 — 메인 라벨과 특근 점을 나란히 표시
-    return Row(
+    // 둘 다 있는 경우 — 특근 점을 위에, 메인 라벨(근무시간)을 아래에 세로 배치
+    return Column(
       mainAxisSize: MainAxisSize.min,
       mainAxisAlignment: MainAxisAlignment.center,
-      children: [main, const SizedBox(width: 3), overtimeDot],
+      children: [overtimeDot, const SizedBox(height: 2), main],
+    );
+  }
+
+  Widget _buildDurationLabel(Duration duration) {
+    return Text(
+      DurationFormatter.short(duration),
+      style: ThemeService.timeDisplay.copyWith(color: ThemeService.primary),
+      textAlign: TextAlign.center,
+      maxLines: 1,
+      overflow: TextOverflow.visible,
     );
   }
 
@@ -237,13 +245,6 @@ class _CalendarWidgetState extends State<CalendarWidget> {
       height: 6,
       decoration: BoxDecoration(shape: BoxShape.circle, color: color),
     );
-  }
-
-  String _formatDuration(Duration d) {
-    final h = d.inHours;
-    final m = d.inMinutes.remainder(60);
-    if (m == 0) return '${h}h';
-    return '${h}h ${m}m';
   }
 
   DaysOfWeekStyle _buildDaysOfWeekStyle() {

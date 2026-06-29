@@ -1,14 +1,12 @@
-# 연장근무·휴일근무(특근) 기능 추가 — 구현 계획서
+# UI 최종 수정사항 — 구현 계획서
 
 ## 프로젝트 현황
 
-현재 `WorkRecordEntity`는 `work`, `vacation`, `holiday` 세 가지 타입을 지원하며,
-달력 1일 1 레코드 구조(`Map<DateTime, WorkRecordEntity>`)로 운용 중이다.
+프로토타입 수준으로 구현된 UI에 섬세함을 더하고, 누적된 UX 결함·overflow·로직 버그를 정리하는 작업이다.
+신규 기능 추가는 없으며, **기존 화면의 다듬기·버그 수정·리팩토링·컴포넌트화**가 핵심이다.
 
-SPEC에서 요구하는 특근 기능을 추가하려면 다음 변경이 필요하다.
-- 같은 날 일반근무 + 특근이 공존할 수 있어야 함 → 별도 엔티티·테이블 분리
-- 특근은 일반 근무시간 계산(`CalculateMonthlyStatsUseCase`)에서 제외
-- 수당 계산: 통상시급을 특근 현황 화면에서 직접 입력, 로컬 저장
+> SPEC의 `모델링`/`supabase 세팅`/`Data 레이어`/`도메인 레이어` 섹션은 비어 있으며,
+> 이미 구현 완료된 영역으로 간주한다. 본 계획은 **UI 영역만** 다룬다.
 
 ---
 
@@ -16,426 +14,236 @@ SPEC에서 요구하는 특근 기능을 추가하려면 다음 변경이 필요
 
 | 항목 | 결정 |
 |------|------|
-| Feature 배치 | `calendar` feature 내 유지 (달력 표시와 긴밀히 연결) |
-| 데이터 모델 | 별도 `OvertimeRecordEntity` 신규 생성 (WorkRecordEntity 변경 없음) |
-| 수당 계산 | 통상시급 직접 입력 (특근 현황 화면), `SharedPreferences`에 로컬 저장 |
-| 특근 색상 | `ThemeService.tertiary` (크림, 기존 미사용 색상) 활용 |
-| 특근 현황 화면 진입 | CalendarPage AppBar에 아이콘 버튼 추가 |
-| BLoC 전략 | CalendarBloc 확장 (overtime 관련 이벤트·상태 추가) |
+| 작업 범위 | UI 다듬기 · 버그 수정 · 리팩토링 · 컴포넌트화 (데이터/도메인 레이어 변경 없음) |
+| 진행 순서 | 공통 기반(ThemeService) → 화면별 수정 → 전역 UX → 리팩토링/컴포넌트화 → 엣지케이스 |
+| 디자인 원칙 | 기존 `ThemeService` 색상·텍스트 스타일 **반드시 준수**, 단순·가독성 우선, Material 위젯 지양 |
+| 아이콘 | `PhosphorIcon`만 사용 (기존 규칙 유지) |
+| 상태 관리 | UI 코드의 로직은 가능한 한 BLoC으로 이관 (event/state 확장) |
 
-> **규칙**: Phase 순서 엄수. 각 Phase 완료 후 `flutter analyze` 통과 확인. 사용자 지시 없이 커밋하지 않음.
-
----
-
-## 핵심 설계
-
-### OvertimeRecordEntity (신규)
-
-```dart
-enum OvertimeType {
-  weekdayOvertime, // 연장근무 (평일 시간 외 근무)
-  holidayWork,     // 휴일근무 (주말/공휴일 근무)
-}
-
-class OvertimeRecordEntity extends Equatable {
-  final String id;
-  final DateTime date;
-  final OvertimeType type;
-  final int workMinutes;  // 특근 시간 (분 단위, 필수)
-  final String? memo;
-
-  Duration get workedDuration => Duration(minutes: workMinutes);
-}
-```
-
-### CalendarLoaded 상태 확장
-
-```dart
-// 기존: records: Map<DateTime, WorkRecordEntity>  (일반근무·연차·휴일, 날짜당 1개)
-// 추가: overtimeRecords: Map<DateTime, List<OvertimeRecordEntity>>  (날짜당 여러 개 가능)
-```
-
-특근은 `CalculateMonthlyStatsUseCase`의 `totalRequired` / `totalWorked` 계산에 포함하지 않는다.
-
-### DayInfoWidget 변경
-
-- 기존: 날짜당 단일 `_RecordTile`
-- 변경: 일반근무 카드(기존) + 특근 카드 목록(`_OvertimeTile` 신규) 순서로 List 표시
-- 두 종류의 기록은 각각 독립적으로 삭제 가능
+> **규칙**: Phase 순서 엄수. 각 Phase 완료 후 `flutter analyze` + `dart fix --apply` 통과 확인.
+> 사용자 지시 없이 커밋하지 않음. 주석은 명시적 요청 없이는 삭제하지 않음.
+> **사용자가 지시한 Phase만 진행**하고, 다음 Phase는 별도 지시 전까지 시작하지 않는다.
 
 ---
 
-## Phase 1: 모델링 + DB 스키마
+## Phase 개요 & 의존성
 
-> **의존성**: 없음 (시작점)
+```
+Phase 0 (ThemeService 기반)
+    └─> Phase 1 (CalendarPage/Widget)
+    └─> Phase 2 (DayInfoWidget)
+    └─> Phase 3 (WorkRecordBottomSheet)
+            └─> Phase 4 (전역 UX 개선)
+                    └─> Phase 5 (리팩토링 & 컴포넌트화)
+                            └─> Phase 6 (엣지/에러케이스 점검)
+```
+
+- Phase 0은 텍스트 스타일 전반에 영향을 주므로 **가장 먼저** 수행한다.
+- Phase 1~3은 Phase 0 이후 독립적으로 진행 가능(서로 의존 없음).
+- Phase 5(리팩토링)는 화면별 수정(1~3)이 끝난 뒤 안정된 상태에서 진행한다.
+
+---
+
+## Phase 0 — ThemeService fontWeight 체계 정리
+
+### 개요
+각 타이포마다 `FontWeight.w600`을 직접 박아넣던 방식을 제거하고,
+ThemeService에 `semiBold` / `regular` / `light` 세 가지 weight 상수를 선언해 각 타이포에 주입한다.
+외부에서도 `copyWith`로 weight를 가져다 쓸 수 있도록 공개한다.
 
 ### 핵심 작업
+- `ThemeService`에 weight 상수 3종 선언
+  - `static const FontWeight semiBold = FontWeight.w600;`
+  - `static const FontWeight regular = FontWeight.w400;`
+  - `static const FontWeight light = FontWeight.w300;`
+- 기존 텍스트 스타일(`headline`/`subtitle`/`body1`/`body2`/`caption`/`timeDisplay`)의 `fontWeight`를 위 상수로 치환
+- 코드 곳곳의 `FontWeight.w600` 등 하드코딩을 `ThemeService.semiBold` 형태로 점진 치환
 
-**`overtime_record_entity.dart`** (신규)
-- `OvertimeType` enum (`weekdayOvertime`, `holidayWork`)
-- `OvertimeRecordEntity`: id, date, type, workMinutes, memo
-- `workedDuration` getter: `Duration(minutes: workMinutes)`
-- `copyWith`, `props` 포함
-
-**`overtime_record_model.dart`** (신규)
-- `fromJson`: DB 컬럼 `id`, `date`, `type`, `work_minutes`, `memo` 파싱
-- `toJson`: 직렬화 (user_id는 DataSource에서 주입)
-- `fromEntity`: OvertimeRecordEntity → OvertimeRecordModel
-
-**DB 스키마 (사용자가 Supabase 콘솔에서 직접 적용)**
-```sql
-CREATE TABLE overtime_records (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  user_id UUID REFERENCES auth.users(id) NOT NULL,
-  date DATE NOT NULL,
-  type TEXT NOT NULL CHECK (type IN ('weekdayOvertime', 'holidayWork')),
-  work_minutes INTEGER NOT NULL,
-  memo TEXT,
-  created_at TIMESTAMPTZ DEFAULT NOW(),
-  updated_at TIMESTAMPTZ DEFAULT NOW()
-);
-
-ALTER TABLE overtime_records ENABLE ROW LEVEL SECURITY;
-
-CREATE POLICY "Users manage own overtime" ON overtime_records
-  USING (auth.uid() = user_id)
-  WITH CHECK (auth.uid() = user_id);
-```
-
-### 파일 구조
-```
-lib/feature/calendar/domain/entities/
-  overtime_record_entity.dart    (신규)
-lib/feature/calendar/data/models/
-  overtime_record_model.dart     (신규)
-```
+### 대상 파일
+- `lib/core/theme/theme_service.dart` (선언 및 적용)
+- weight를 하드코딩한 위젯들 (치환 대상 검색 후 정리)
 
 ### 완료 체크리스트
-- [x] `OvertimeType` enum 정의
-- [x] `OvertimeRecordEntity` 작성 (id, date, type, workMinutes, memo, workedDuration, copyWith, props)
-- [x] `OvertimeRecordModel` fromJson / toJson / fromEntity 작성
-- [ ] Supabase `overtime_records` 테이블 생성 (사용자)
+- [x] weight 상수 3종 선언 완료
+- [x] 기존 텍스트 스타일이 상수를 참조하도록 변경
+- [x] 하드코딩된 `FontWeight.wXXX` 치환 (외부에서 copyWith로 weight 적용 가능 확인)
 - [x] `flutter analyze` 통과
 
 ---
 
-## Phase 2: 데이터 레이어
+## Phase 1 — CalendarPage / CalendarWidget 다듬기
 
-> **의존성**: Phase 1 완료 후 진행
+### 개요
+달력 화면의 헤더 스크롤 동작, 셀 레이아웃, overflow, dot 배치, 선택일 버그를 정리한다.
 
 ### 핵심 작업
+1. **월 헤더 스크롤 연동**
+   - 현재 `_PrimaryAppBar` + `_MonthHeader`가 `SingleChildScrollView` 바깥 `Column`에 고정됨
+   - `_MonthHeader`(`yyyy년 M월`)를 스크롤 영역 안으로 이동해 콘텐츠와 함께 내려가게 함
+   - (`_PrimaryAppBar`의 고정 여부는 작업 중 시각 확인 후 결정)
+2. **셀 날짜 크기 축소**
+   - `_buildDateCircle`의 날짜 텍스트 크기를 줄임 (`body2` → 더 작은 스케일 또는 copyWith)
+3. **근무시간 라벨 overflow 해결**
+   - `10h 20m`처럼 긴 라벨이 셀 폭을 넘는 문제
+   - `_formatDuration` 표기 간소화(`h`/`m` 제거 등) 또는 `FittedBox`/축약 표기 적용
+4. **dot + 근무시간 동시 표시 시 세로 배치**
+   - 현재 `_buildCellLabel`에서 둘 다 있으면 `Row`로 나란히 배치 → `Column`으로 변경
+   - dot을 위에, 근무시간을 아래에 배치
+5. **근태 삭제/기록 시 selectedDate가 오늘로 초기화되는 버그**
+   - 기록 저장·삭제 후 상태 재생성 과정에서 `selectedDate`가 보존되지 않는 원인 추적
+   - `CalendarBloc`에서 기존 `selectedDate`를 유지하도록 수정
 
-**`i_overtime_repository.dart`** (신규, 추상 인터페이스)
-- `Future<List<OvertimeRecordEntity>> getOvertimeByMonth(int year, int month)`
-- `Future<void> addOvertime(OvertimeRecordEntity record)`
-- `Future<void> updateOvertime(OvertimeRecordEntity record)`
-- `Future<void> deleteOvertime(String id)`
-
-**`overtime_data_source.dart`** (신규)
-- Supabase CRUD (try-catch 없음, Model 반환)
-- insert 시 `user_id` 포함
-
-**`overtime_repository_impl.dart`** (신규)
-- DataSource 주입, try-catch로 예외 처리, Entity 반환
-
-**`mock_overtime_repository.dart`** (신규)
-- 목 데이터: weekdayOvertime 케이스, holidayWork 케이스 각각 포함
-- 같은 날에 여러 특근 기록이 있는 케이스 포함
-
-**`service_locator.dart`** (수정)
-- `OvertimeDataSource`, `IOvertimeRepository` DI 등록
-
-### 파일 구조
-```
-lib/feature/calendar/domain/repositories/
-  i_overtime_repository.dart               (신규)
-lib/feature/calendar/data/
-  datasources/overtime_data_source.dart    (신규)
-  repositories/overtime_repository_impl.dart (신규)
-  repositories/mock_overtime_repository.dart (신규)
-lib/core/di/
-  service_locator.dart                     (수정)
-```
+### 대상 파일
+- `lib/feature/calendar/presentation/pages/calendar_page.dart`
+- `lib/feature/calendar/presentation/widgets/calendar_widget.dart`
+- `lib/feature/calendar/presentation/bloc/calendar_bloc.dart` (selectedDate 보존)
 
 ### 완료 체크리스트
-- [x] `IOvertimeRepository` 인터페이스 작성
-- [x] `OvertimeDataSource` CRUD 구현 (user_id 포함)
-- [x] `OvertimeRepositoryImpl` 구현 (예외 처리 포함)
-- [x] `MockOvertimeRepository` 목 데이터 구현
-- [x] 서비스 로케이터에 DataSource · Repository 등록
+- [x] 월 헤더가 스크롤과 함께 이동
+- [x] 셀 날짜 크기 축소 적용
+- [x] 긴 근무시간 라벨 overflow 해소
+- [x] dot/근무시간 세로 배치 (dot 위, 시간 아래)
+- [x] 근태 기록·삭제 후 selectedDate 유지 확인
 - [x] `flutter analyze` 통과
 
 ---
 
-## Phase 3: 도메인 레이어 — UseCase
+## Phase 2 — DayInfoWidget (InfoPage) 다듬기
 
-> **의존성**: Phase 2 완료 후 진행
+### 개요
+선택일 상세 카드의 디테일을 정리한다.
 
 ### 핵심 작업
+1. **근태 Card 앞 primary 강조 바 크기 조정**
+   - 카드 좌측 primary 색상 얇은 container가 너무 작음 → 약간 키움
+2. **공휴일 이름 빨간색 표기 제거**
+   - 날짜 밑에 공휴일명이 `secondary`(빨강)로 뜨는 부분 삭제
 
-**신규 UseCase 파일 (4개)**
-- `get_overtime_records_usecase.dart`: 월별 특근 조회
-- `add_overtime_record_usecase.dart`: 특근 추가
-- `update_overtime_record_usecase.dart`: 특근 수정
-- `delete_overtime_record_usecase.dart`: 특근 삭제
-
-**`calculate_overtime_stats_usecase.dart`** (신규)
-- `OvertimeStats` 데이터 클래스:
-  - `totalOvertimeMinutes`: 총 특근 시간 (분)
-  - `weekdayOvertimeMinutes`: 연장근무 합계
-  - `holidayWorkMinutes`: 휴일근무 합계
-  - `calculateAllowance(int hourlyWage)`: 수당 금액 계산
-    - 연장근무: `hourlyWage × 1.5 × (weekdayOvertimeMinutes / 60)`
-    - 휴일근무: `hourlyWage × 2.0 × (holidayWorkMinutes / 60)`
-- `call(int year, int month)` → `OvertimeStats`
-
-**`service_locator.dart`** (수정)
-- 5개 UseCase DI 등록
-
-### 파일 구조
-```
-lib/feature/calendar/domain/usecases/
-  get_overtime_records_usecase.dart          (신규)
-  add_overtime_record_usecase.dart           (신규)
-  update_overtime_record_usecase.dart        (신규)
-  delete_overtime_record_usecase.dart        (신규)
-  calculate_overtime_stats_usecase.dart      (신규, OvertimeStats 포함)
-lib/core/di/
-  service_locator.dart                       (수정)
-```
+### 대상 파일
+- `lib/feature/calendar/presentation/widgets/day_info_widget.dart`
 
 ### 완료 체크리스트
-- [x] CRUD UseCase 4개 구현
-- [x] `OvertimeStats` 데이터 클래스 정의
-- [x] `CalculateOvertimeStatsUseCase` 구현 (수당 계산 포함)
-- [x] DI 등록
+- [x] 강조 바 크기 자연스럽게 조정
+- [x] 공휴일명 빨간 텍스트 제거
+- [x] 디자인 시스템 색상/스타일 준수 확인
 - [x] `flutter analyze` 통과
 
 ---
 
-## Phase 4: CalendarBloc 확장
+## Phase 3 — WorkRecordBottomSheet 입력 UX 수정
 
-> **의존성**: Phase 3 완료 후 진행
+### 개요
+근무시간 입력 시 키보드·피커 관련 UX 결함을 해결한다.
 
 ### 핵심 작업
+1. **시간/분 TextField 전환 시 키보드 깜빡임 제거**
+   - 옆 TextField를 누르면 키보드가 잠깐 내려갔다 올라오는 현상
+   - `FocusNode` 명시 관리 또는 포커스 전환 방식 개선으로 키보드 유지
+2. **키보드 올라온 채 CupertinoPicker 표출 시 overflow 해결**
+   - 출퇴근 시간 피커(`WorkRecordCommutePicker`) 펼칠 때 `viewInsets`와 겹쳐 overflow
+   - 피커 표출 전 키보드 dismiss, 또는 레이아웃이 viewInsets를 고려하도록 수정
 
-**`calendar_state.dart`** (수정)
-- `CalendarLoaded`에 `overtimeRecords: Map<DateTime, List<OvertimeRecordEntity>>` 추가
-- `copyWith` 갱신
-
-**`calendar_event.dart`** (수정)
-- `CalendarOvertimeAdded(OvertimeRecordEntity record)` 추가
-- `CalendarOvertimeUpdated(OvertimeRecordEntity record)` 추가
-- `CalendarOvertimeDeleted(String id)` 추가
-
-**`calendar_bloc.dart`** (수정)
-- 생성자에 overtime UseCase 4개 추가
-- `_loadMonth`에서 일반 records와 overtime records를 병렬로 조회
-  - `overtimeList` → `Map<DateTime, List<OvertimeRecordEntity>>`로 변환
-  - `CalendarLoaded` 생성 시 `overtimeRecords` 포함
-- 핸들러 3개 추가: `_onOvertimeAdded`, `_onOvertimeUpdated`, `_onOvertimeDeleted`
-
-### 파일 구조
-```
-lib/feature/calendar/presentation/bloc/
-  calendar_state.dart    (수정)
-  calendar_event.dart    (수정)
-  calendar_bloc.dart     (수정)
-```
+### 대상 파일
+- `lib/feature/calendar/presentation/widgets/work_record_bottom_sheet.dart`
+- `lib/feature/calendar/presentation/widgets/work_record_commute_picker.dart`
 
 ### 완료 체크리스트
-- [x] `CalendarLoaded`에 `overtimeRecords` 추가 및 `copyWith` 반영
-- [x] Overtime 이벤트 3개 추가
-- [x] `CalendarBloc` 생성자에 overtime UseCase 주입
-- [x] `_loadMonth`에서 overtime 데이터 병렬 로드
-- [x] overtime CRUD 핸들러 구현
+- [ ] 시간↔분 전환 시 키보드 유지 (깜빡임 없음)
+- [ ] 키보드 상태에서 피커 표출해도 overflow 없음
+- [ ] `flutter analyze` 통과
+
+---
+
+## Phase 4 — 전역 UX 개선
+
+### 개요
+화면 전반에 걸친 공통 UX 결함을 정리한다.
+
+### 핵심 작업
+1. **키보드 dismiss 수단 제공**
+   - 특근현황 등 입력 화면에서 키보드를 내릴 방법이 없음
+   - 화면 빈 영역 탭 시 `FocusScope.unfocus()` 처리 (공통 래퍼 위젯 검토)
+2. **앱바 버튼 hit 범위·인식률 개선**
+   - `_MonthHeader`의 caret 버튼, `_PrimaryAppBar` 아이콘 등 `GestureDetector` 히트 영역이 좁음
+   - `HitTestBehavior.opaque` 적용 또는 충분한 터치 타깃(최소 44px) 확보
+3. **overflow 전반 점검**
+   - 각 화면을 훑으며 좁은 화면/긴 텍스트에서의 overflow를 일괄 처리
+
+### 대상 파일
+- 공통 래퍼: `lib/feature/common/widgets/` (필요 시 신규 위젯)
+- `lib/feature/calendar/presentation/pages/calendar_page.dart` (앱바 히트 영역)
+- 입력이 있는 페이지 전반 (특근현황 등)
+
+### 완료 체크리스트
+- [x] 입력 화면에서 빈 영역 탭으로 키보드 dismiss 가능
+- [x] 앱바/네비 버튼 터치 인식률 개선
+- [x] 주요 화면 overflow 없음 확인
 - [x] `flutter analyze` 통과
 
 ---
 
-## Phase 5: FAB & 특근 입력 UI
+## Phase 5 — 리팩토링 & 컴포넌트화
 
-> **의존성**: Phase 4 완료 후 진행
+### 개요
+복잡해진 UI 코드를 feature별로 page부터 차근차근 정리한다. 거시적으로 한 번에 보지 않고,
+**feature 단위로 page → widget 순서로** 훑으며 진행한다.
 
 ### 핵심 작업
+1. **BLoC 이관**
+   - 위젯 내부의 계산·분기 로직 중 BLoC으로 옮길 수 있는 것은 event/state로 이관
+2. **불필요한 변수·복잡 구현 정리**
+   - 중복 선언, 과도하게 복잡한 위젯 트리 단순화
+3. **컴포넌트화**
+   - 반복되는 UI 패턴(예: 핸들/타이틀/저장 버튼/시간 입력 필드 등)을 공통 위젯으로 추출
+4. **파일 크기 점검**
+   - 400줄 초과 파일 분리
 
-**`overtime_record_bottom_sheet.dart`** (신규)
-- `OvertimeType` 선택 세그먼트 (연장근무 / 휴일근무)
-- 시간(hour) / 분(minute) TextField (필수, 숫자만, `FilteringTextInputFormatter.digitsOnly`)
-- 저장 시 `CalendarOvertimeAdded` / `CalendarOvertimeUpdated` 발행
-- 0시간 0분 입력 방지 (저장 버튼 비활성)
-- 편집 시 기존 값 복원
-
-**`expandable_fab.dart`** (수정)
-- "특근" 항목 추가 (아이콘: `PhosphorIcons.clock()`, 색상: `ThemeService.tertiary`)
-- `_onOvertimeFabTapped(BuildContext)` → `OvertimeRecordBottomSheet.show()` 호출
-- FAB 항목 순서: 근무 / 연차 / 휴일 / 특근
-
-**`calendar_widget.dart`** (수정)
-- 달력 셀에 특근 기록이 있는 날 `ThemeService.tertiary` 색상 점 표시
-- 기존 work / vacation / holiday 표시 로직과 병렬로 처리
-
-**`calendar_page.dart`** (수정)
-- `_CalendarLegend`에 특근 색상 항목 추가
-
-### 파일 구조
-```
-lib/feature/calendar/presentation/widgets/
-  overtime_record_bottom_sheet.dart    (신규)
-  calendar_widget.dart                 (수정)
-lib/feature/common/widgets/
-  expandable_fab.dart                  (수정)
-lib/feature/calendar/presentation/pages/
-  calendar_page.dart                   (수정: 범례)
-```
+### 대상 파일
+- `lib/feature/calendar/presentation/` 전반 (page → widget 순)
+- 추출된 공통 컴포넌트: `lib/feature/common/widgets/`
 
 ### 완료 체크리스트
-- [x] `OvertimeRecordBottomSheet` 구현 (타입 선택, 시간 입력, 저장)
-- [x] FAB에 특근 항목 추가
-- [x] 달력 셀에 특근 날짜 표시 추가
-- [x] 범례에 특근 항목 추가
-- [x] 편집(기존 기록 수정) 지원
-- [x] 입력 검증 (미입력·범위 오류)
+- [x] 위젯에서 분리 가능한 로직을 BLoC으로 이관
+- [x] 중복/복잡 코드 정리
+- [x] 반복 UI 컴포넌트화 완료
+- [x] 모든 파일 400줄 이하 유지
+- [x] 기존 동작 회귀 없음 확인
 - [x] `flutter analyze` 통과
 
 ---
 
-## Phase 6: DayInfoWidget — 일별 목록 표시
+## Phase 5.5 — 시간/날짜 유틸 함수 통합 ✅
 
-> **의존성**: Phase 5 완료 후 진행
+`lib/core/utils/`에 `DurationFormatter`, `DateFormatter` 생성.
+프레젠테이션 레이어 10개 파일의 중복 함수 제거 및 교체 완료.
+
+---
+
+## Phase 6 — 엣지/에러케이스 점검
+
+### 개요
+엣지케이스와 에러케이스를 잘 잡도록 마무리 점검한다.
 
 ### 핵심 작업
+- 빈 입력·비정상 값(시간 0, 분 60 이상 등) 처리 확인
+- 네트워크/저장 실패 시 사용자 친화적 에러 메시지 노출 확인
+- null 안전성(`?`/`??`/`!`) 신중 사용 점검
 
-**`day_info_widget.dart`** (수정)
-- `_DayInfoContent`에 `overtimeRecords: List<OvertimeRecordEntity>` 파라미터 추가
-  - `CalendarLoaded.overtimeRecords[normalizedDate] ?? []`로 전달
-- 렌더링 순서: 일반근무 카드(`_RecordTile`, 기존) → 특근 카드 목록(`_OvertimeTile`, 신규)
-- 일반근무가 없어도 특근 카드는 표시 가능 (반대도 마찬가지)
-
-**`_OvertimeTile` 신규 위젯** (`day_info_widget.dart` 하단)
-- 색상 바: `ThemeService.tertiary`
-- 타입 레이블: "연장근무" / "휴일근무"
-- 아이콘: `PhosphorIcons.clock()`
-- 특근 시간 강조 표시 (`body1`, `ThemeService.tertiary`)
-- 메모 (있을 때만 caption으로)
-- 삭제 버튼: `CalendarOvertimeDeleted` 이벤트 발행
-
-### 파일 구조
-```
-lib/feature/calendar/presentation/widgets/
-  day_info_widget.dart    (수정: overtimeRecords 파라미터, _OvertimeTile 추가)
-```
+### 대상 파일
+- 입력·저장 흐름 전반 (bottom sheet, BLoC, repository 경계)
 
 ### 완료 체크리스트
-- [x] `_DayInfoContent`에서 overtime 파라미터 수신 및 렌더링
-- [x] `OvertimeTile` 구현 (타입, 시간, 메모, 삭제)
-- [x] 일반근무 없이 특근만 있는 날 정상 표시
-- [x] 특근만 있는 날 `_EmptyRecordText` 표시 조건 정비
-- [x] `flutter analyze` 통과
+- [ ] 주요 입력 엣지케이스 처리 확인
+- [ ] 에러 메시지 사용자 관점에서 이해 가능
+- [ ] null 안전성 점검 완료
+- [ ] `flutter analyze` 통과
 
 ---
 
-## Phase 7: 특근 현황·수당 계산 화면
+## 작업 시 공통 준수 사항
 
-> **의존성**: Phase 6 완료 후 진행
-
-### 핵심 작업
-
-**`overtime_summary_page.dart`** (신규)
-- 진입: CalendarPage `_MonthHeader` AppBar 우측 아이콘 버튼 (`PhosphorIcons.clock()`)
-- 월 선택 헤더 (좌우 이동, 현재 CalendarBloc의 focusedMonth 초기값)
-- 통상시급 입력 필드 (숫자만, `SharedPreferences` 저장·복원)
-- 특근 통계 요약 카드:
-  - 연장근무: 총 시간, 예상 수당
-  - 휴일근무: 총 시간, 예상 수당
-  - 합계 수당
-  - 시급 미입력 시 수당은 `- 원`으로 표시
-- 특근 기록 목록: 날짜 / 타입 / 시간 / 메모 (날짜 오름차순)
-
-**`app_router.dart`** (수정)
-- `OvertimeSummaryPage` 라우트 추가
-
-**`calendar_page.dart`** (수정)
-- `_MonthHeader`에 AppBar 우측 아이콘 버튼 추가 → `OvertimeSummaryPage`로 이동
-
-### 파일 구조
-```
-lib/feature/calendar/presentation/pages/
-  overtime_summary_page.dart    (신규)
-lib/core/router/
-  app_router.dart               (수정)
-lib/feature/calendar/presentation/pages/
-  calendar_page.dart            (수정: 진입 버튼)
-```
-
-### 완료 체크리스트
-- [x] 통상시급 입력 필드 + `SharedPreferences` 저장·복원
-- [x] `CalculateOvertimeStatsUseCase` 연동 (월별 통계)
-- [x] 연장근무 / 휴일근무 수당 별도 표시
-- [x] 특근 기록 목록 (날짜 오름차순)
-- [x] AppBar 진입 버튼 추가 (Navigator.push 방식, GoRouter 라우트 불필요)
-- [x] `flutter analyze` 최종 통과
-
----
-
-## 파일 전체 구조 (완료 후)
-
-```
-lib/
-  core/
-    di/service_locator.dart                                (수정)
-    router/app_router.dart                                 (수정)
-  feature/calendar/
-    domain/
-      entities/
-        work_record_entity.dart                            (유지)
-        overtime_record_entity.dart                        (신규)
-      repositories/
-        i_calendar_repository.dart                         (유지)
-        i_overtime_repository.dart                         (신규)
-      usecases/
-        get_overtime_records_usecase.dart                  (신규)
-        add_overtime_record_usecase.dart                   (신규)
-        update_overtime_record_usecase.dart                (신규)
-        delete_overtime_record_usecase.dart                (신규)
-        calculate_overtime_stats_usecase.dart              (신규)
-    data/
-      models/
-        work_record_model.dart                             (유지)
-        overtime_record_model.dart                         (신규)
-      datasources/
-        work_record_data_source.dart                       (유지)
-        overtime_data_source.dart                          (신규)
-      repositories/
-        calendar_repository_impl.dart                      (유지)
-        overtime_repository_impl.dart                      (신규)
-        mock_calendar_repository.dart                      (유지)
-        mock_overtime_repository.dart                      (신규)
-    presentation/
-      bloc/
-        calendar_bloc.dart                                 (수정)
-        calendar_event.dart                                (수정)
-        calendar_state.dart                                (수정)
-      pages/
-        calendar_page.dart                                 (수정)
-        overtime_summary_page.dart                         (신규)
-      widgets/
-        calendar_widget.dart                               (수정)
-        day_info_widget.dart                               (수정)
-        overtime_record_bottom_sheet.dart                  (신규)
-  feature/common/widgets/
-    expandable_fab.dart                                    (수정)
-```
-
-DB: `overtime_records` 테이블 신규 생성 — 사용자가 Supabase 콘솔에서 적용.
-
----
-
-## 참고사항
-- **추상체는 Repo만**: `IOvertimeRepository` 신규 추가. DataSource는 추상체 없이 직접 구현.
-- **특근은 근무시간 계산에서 제외**: `CalculateMonthlyStatsUseCase` 변경 없음.
-- **디자인**: 기존 `ThemeService` 테마 준수. `PhosphorIcon`만 사용. Material 기본 위젯 지양.
-- **단순함 우선**: 가독성 좋고 복잡하지 않게. 추상화 남용 금지.
-- **파일 크기**: 400줄 초과 시 위젯 파일 분리.
-- **커밋**: 사용자 명시적 지시 없이 커밋하지 않음.
-- **작업 단위**: 사용자가 지시한 Phase만 진행. 다음 Phase는 명시적 지시까지 대기.
+- 모든 구현은 **단순하고 가독성 좋게**. 화려함보다 명확함.
+- 기존 **디자인 시스템·테마 반드시 준수** (색상/타이포는 `ThemeService` 경유).
+- 아이콘은 **PhosphorIcon만** 사용.
+- 함수 순서는 상위(호출자) → 하위(피호출자).
+- 각 Phase는 의미 있는 단위로 커밋(단, 사용자 지시 후에만).

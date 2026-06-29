@@ -1,4 +1,5 @@
 import 'package:commute_calendar/core/theme/theme_service.dart';
+import 'package:commute_calendar/core/utils/duration_formatter.dart';
 import 'package:commute_calendar/feature/calendar/domain/usecases/calculate_monthly_stats_usecase.dart';
 import 'package:commute_calendar/feature/calendar/presentation/bloc/calendar_bloc.dart';
 import 'package:commute_calendar/feature/calendar/presentation/bloc/calendar_state.dart';
@@ -33,20 +34,20 @@ class _SummaryContent extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
-          _SummaryItem(
-            label: '총 목표',
-            duration: stats.totalRequired,
+          Flexible(
+            child: _SummaryItem(label: '총 목표', duration: stats.totalRequired),
           ),
           _Divider(),
-          _SummaryItem(
-            label: '현재 채움',
-            duration: stats.totalWorked,
+          Flexible(
+            child: _SummaryItem(label: '현재 채움', duration: stats.totalWorked),
           ),
           _Divider(),
-          _SummaryItem(
-            label: '남은 시간',
-            duration: stats.remaining,
-            highlight: stats.remaining == Duration.zero,
+          Flexible(
+            child: _SummaryItem(
+              label: '남은 시간',
+              duration: stats.remaining,
+              highlight: stats.remaining == Duration.zero,
+            ),
           ),
         ],
       ),
@@ -74,28 +75,20 @@ class _SummaryItem extends StatelessWidget {
         Text(label, style: ThemeService.caption),
         const SizedBox(height: 4),
         Text(
-          _format(duration),
-          style: ThemeService.subtitle.copyWith(color: color),
+          DurationFormatter.long(duration),
+          style: ThemeService.body2.copyWith(
+            color: color,
+            fontWeight: ThemeService.semiBold,
+          ),
         ),
       ],
     );
-  }
-
-  String _format(Duration d) {
-    final h = d.inHours;
-    final m = d.inMinutes.remainder(60);
-    if (m == 0) return '${h}h';
-    return '${h}h ${m}m';
   }
 }
 
 class _Divider extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: 1,
-      height: 40,
-      color: ThemeService.black200,
-    );
+    return Container(width: 1, height: 40, color: ThemeService.black200);
   }
 }

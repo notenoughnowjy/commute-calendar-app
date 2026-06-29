@@ -1,6 +1,7 @@
 import 'package:commute_calendar/core/di/service_locator.dart';
 import 'package:commute_calendar/core/services/toast_service.dart';
 import 'package:commute_calendar/core/theme/theme_service.dart';
+import 'package:commute_calendar/core/utils/date_formatter.dart';
 import 'package:commute_calendar/feature/auth/presentation/bloc/auth_bloc.dart';
 import 'package:commute_calendar/feature/auth/presentation/bloc/auth_state.dart';
 import 'package:commute_calendar/feature/calendar/presentation/bloc/calendar_bloc.dart';
@@ -13,7 +14,6 @@ import 'package:commute_calendar/feature/calendar/presentation/pages/overtime_su
 import 'package:commute_calendar/feature/common/widgets/expandable_fab.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:intl/intl.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 
 class CalendarPage extends StatelessWidget {
@@ -39,9 +39,9 @@ class _CalendarView extends StatelessWidget {
         BlocListener<AuthBloc, AuthState>(
           listener: (context, state) {
             if (state is AuthAuthenticated && state.isAutoLogin) {
-              ToastService.show(context: context, message: '자동로그인됐습니다.');
+              ToastService.show(context: context, message: '환영합니다!');
             } else if (state is AuthUnauthenticated) {
-              ToastService.show(context: context, message: '로그아웃됐습니다.');
+              ToastService.show(context: context, message: '로그아웃 되었습니다.');
             }
           },
         ),
@@ -70,11 +70,11 @@ class _CalendarView extends StatelessWidget {
               Column(
                 children: [
                   const _PrimaryAppBar(),
-                  const _MonthHeader(),
                   Expanded(
                     child: SingleChildScrollView(
                       child: Column(
                         children: [
+                          const _MonthHeader(),
                           const _CalendarLegend(),
                           BlocBuilder<CalendarBloc, CalendarState>(
                             buildWhen: (prev, curr) => curr is CalendarLoaded,
@@ -195,6 +195,7 @@ class _PrimaryAppBar extends StatelessWidget {
         children: [
           Text('근태 달력', style: ThemeService.subtitle),
           GestureDetector(
+            behavior: HitTestBehavior.opaque,
             onTap: () {
               final state = context.read<CalendarBloc>().state;
               final month = state is CalendarLoaded
@@ -208,7 +209,7 @@ class _PrimaryAppBar extends StatelessWidget {
               );
             },
             child: Padding(
-              padding: const EdgeInsets.all(8),
+              padding: const EdgeInsets.all(12),
               child: PhosphorIcon(
                 PhosphorIcons.clock(),
                 color: ThemeService.tertiary,
@@ -233,13 +234,14 @@ class _MonthHeader extends StatelessWidget {
         final month = state is CalendarLoaded
             ? state.focusedMonth
             : DateTime.now();
-        final label = DateFormat('yyyy년 M월').format(month);
+        final label = DateFormatter.monthLabel(month);
 
         return Container(
           padding: const EdgeInsets.all(4),
           child: Row(
             children: [
               GestureDetector(
+                behavior: HitTestBehavior.opaque,
                 onTap: () {
                   final prev = DateTime(month.year, month.month - 1);
                   context.read<CalendarBloc>().add(CalendarMonthChanged(prev));
@@ -254,9 +256,15 @@ class _MonthHeader extends StatelessWidget {
                 ),
               ),
               Expanded(
-                child: Center(child: Text(label, style: ThemeService.subtitle.copyWith(fontSize: 18))),
+                child: Center(
+                  child: Text(
+                    label,
+                    style: ThemeService.subtitle.copyWith(fontSize: 18),
+                  ),
+                ),
               ),
               GestureDetector(
+                behavior: HitTestBehavior.opaque,
                 onTap: () {
                   final next = DateTime(month.year, month.month + 1);
                   context.read<CalendarBloc>().add(CalendarMonthChanged(next));
