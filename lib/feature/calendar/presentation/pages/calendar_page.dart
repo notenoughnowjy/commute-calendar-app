@@ -2,8 +2,6 @@ import 'package:commute_calendar/core/di/service_locator.dart';
 import 'package:commute_calendar/core/services/toast_service.dart';
 import 'package:commute_calendar/core/theme/theme_service.dart';
 import 'package:commute_calendar/core/utils/date_formatter.dart';
-import 'package:commute_calendar/feature/auth/presentation/bloc/auth_bloc.dart';
-import 'package:commute_calendar/feature/auth/presentation/bloc/auth_state.dart';
 import 'package:commute_calendar/feature/calendar/presentation/bloc/calendar_bloc.dart';
 import 'package:commute_calendar/feature/calendar/presentation/bloc/calendar_event.dart';
 import 'package:commute_calendar/feature/calendar/presentation/bloc/calendar_state.dart';
@@ -34,33 +32,20 @@ class _CalendarView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MultiBlocListener(
-      listeners: [
-        BlocListener<AuthBloc, AuthState>(
-          listener: (context, state) {
-            if (state is AuthAuthenticated && state.isAutoLogin) {
-              ToastService.show(context: context, message: '환영합니다!');
-            } else if (state is AuthUnauthenticated) {
-              ToastService.show(context: context, message: '로그아웃 되었습니다.');
-            }
-          },
-        ),
-        BlocListener<CalendarBloc, CalendarState>(
-          listener: (context, state) {
-            if (state is CalendarRecordSaved) {
-              ToastService.show(context: context, message: state.message);
-            } else if (state is CalendarRecordRemoved) {
-              ToastService.show(context: context, message: '기록이 삭제됐습니다.');
-            } else if (state is CalendarError) {
-              ToastService.show(
-                context: context,
-                message: state.message,
-                isError: true,
-              );
-            }
-          },
-        ),
-      ],
+    return BlocListener<CalendarBloc, CalendarState>(
+      listener: (context, state) {
+        if (state is CalendarRecordSaved) {
+          ToastService.show(context: context, message: state.message);
+        } else if (state is CalendarRecordRemoved) {
+          ToastService.show(context: context, message: '기록이 삭제됐습니다.');
+        } else if (state is CalendarError) {
+          ToastService.show(
+            context: context,
+            message: state.message,
+            isError: true,
+          );
+        }
+      },
       child: Scaffold(
         backgroundColor: ThemeService.white,
         body: SafeArea(

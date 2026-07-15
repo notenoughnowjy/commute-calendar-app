@@ -1,15 +1,14 @@
-import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:drift/drift.dart';
 
+import '../../../../core/database/app_database.dart';
 import '../../domain/entities/overtime_record_entity.dart';
 import '../../domain/repositories/i_overtime_repository.dart';
 import '../datasources/overtime_data_source.dart';
-import '../models/overtime_record_model.dart';
 
 class OvertimeRepositoryImpl implements IOvertimeRepository {
-  const OvertimeRepositoryImpl(this._dataSource, this._supabase);
+  const OvertimeRepositoryImpl(this._dataSource);
 
   final OvertimeDataSource _dataSource;
-  final SupabaseClient _supabase;
 
   @override
   Future<List<OvertimeRecordEntity>> getOvertimeByMonth(
@@ -17,11 +16,11 @@ class OvertimeRepositoryImpl implements IOvertimeRepository {
     int month,
   ) async {
     try {
-      final userId = _supabase.auth.currentUser!.id;
-      final firstDay = _formatDate(year, month, 1);
-      final lastDay = _formatDate(year, month, DateTime(year, month + 1, 0).day);
-      final rows = await _dataSource.getOvertimeByMonth(userId, firstDay, lastDay);
-      return rows.map(OvertimeRecordModel.fromJson).toList();
+      final first = DateTime(year, month, 1);
+      final lastDay = DateTime(year, month + 1, 0).day;
+      final last = DateTime(year, month, lastDay, 23, 59, 59);
+      final rows = await _dataSource.getOvertimeByMonth(first, last);
+      return rows.map(_toEntity).toList();
     } catch (e) {
       throw Exception('특근 기록을 불러오는 중 오류가 발생했습니다: $e');
     }
@@ -30,10 +29,7 @@ class OvertimeRepositoryImpl implements IOvertimeRepository {
   @override
   Future<void> addOvertime(OvertimeRecordEntity record) async {
     try {
-      final userId = _supabase.auth.currentUser!.id;
-      final payload = OvertimeRecordModel.fromEntity(record).toJson()
-        ..['user_id'] = userId;
-      await _dataSource.addOvertime(payload);
+      await _dataSource.addOvertime(_toCompanion(record));
     } catch (e) {
       throw Exception('특근 기록을 추가하는 중 오류가 발생했습니다: $e');
     }
@@ -42,9 +38,7 @@ class OvertimeRepositoryImpl implements IOvertimeRepository {
   @override
   Future<void> updateOvertime(OvertimeRecordEntity record) async {
     try {
-      final payload = OvertimeRecordModel.fromEntity(record).toJson()
-        ..['updated_at'] = DateTime.now().toIso8601String();
-      await _dataSource.updateOvertime(record.id, payload);
+      await _dataSource.updateOvertime(_toCompanion(record));
     } catch (e) {
       throw Exception('특근 기록을 수정하는 중 오류가 발생했습니다: $e');
     }
@@ -59,8 +53,23 @@ class OvertimeRepositoryImpl implements IOvertimeRepository {
     }
   }
 
-  String _formatDate(int year, int month, int day) =>
-      '${year.toString().padLeft(4, '0')}-'
-      '${month.toString().padLeft(2, '0')}-'
-      '${day.toString().padLeft(2, '0')}';
+  OvertimeRecordEntity _toEntity(OvertimeRecord row) {
+    return OvertimeRecordEntity(
+      id: row.id,
+      date: row.date,
+      type: row.type,
+      workMinutes: row.workMinutes,
+      memo: row.memo,
+    );
+  }
+
+  OvertimeRecordsCompanion _toCompanion(OvertimeRecordEntity record) {
+    return OvertimeRecordsCompanion(
+      id: Value(record.id),
+      date: Value(DateTime(record.date.year, record.date.month, record.date.day)),
+      type: Value(record.type),
+      workMinutes: Value(record.workMinutes),
+      memo: Value(record.memo),
+    );
+  }
 }

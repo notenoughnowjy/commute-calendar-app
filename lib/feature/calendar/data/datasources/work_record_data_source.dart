@@ -1,32 +1,30 @@
-import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:drift/drift.dart';
+
+import '../../../../core/database/app_database.dart';
 
 class WorkRecordDataSource {
-  const WorkRecordDataSource(this._supabase);
+  const WorkRecordDataSource(this._db);
 
-  final SupabaseClient _supabase;
+  final AppDatabase _db;
 
-  Future<List<Map<String, dynamic>>> getRecordsByMonth(
-    String userId,
-    String firstDay,
-    String lastDay,
-  ) async {
-    return await _supabase
-        .from('work_records')
-        .select()
-        .eq('user_id', userId)
-        .gte('date', firstDay)
-        .lte('date', lastDay);
+  Future<List<WorkRecord>> getRecordsByMonth(
+    DateTime first,
+    DateTime last,
+  ) {
+    return (_db.select(_db.workRecords)
+          ..where((t) => t.date.isBetweenValues(first, last)))
+        .get();
   }
 
-  Future<void> addRecord(Map<String, dynamic> payload) async {
-    await _supabase.from('work_records').insert(payload);
+  Future<void> addRecord(WorkRecordsCompanion companion) async {
+    await _db.into(_db.workRecords).insert(companion);
   }
 
-  Future<void> updateRecord(String id, Map<String, dynamic> payload) async {
-    await _supabase.from('work_records').update(payload).eq('id', id);
+  Future<void> updateRecord(WorkRecordsCompanion companion) async {
+    await _db.update(_db.workRecords).replace(companion);
   }
 
   Future<void> deleteRecord(String id) async {
-    await _supabase.from('work_records').delete().eq('id', id);
+    await (_db.delete(_db.workRecords)..where((t) => t.id.equals(id))).go();
   }
 }

@@ -1,7 +1,7 @@
 name: commute_calendar
 description: "근태 관리 달력"
 
-publish_to: 'DU-Company'
+publish_to: 'jyp4188@gmail.com'
 
 version: 1.0.0+1
 
@@ -16,10 +16,8 @@ dependencies:
   flutter_bloc: ^8.1.4
   bloc: ^8.1.2
   phosphor_flutter: ^2.1.0
-  flutter_dotenv: ^5.1.0
   table_calendar: ^3.1.0
   equatable: ^2.0.5
-  supabase_flutter: ^2.14.2
   get_it: ^7.6.0
   json_annotation: ^4.8.1
   world_holidays: ^2.0.1
@@ -27,6 +25,8 @@ dependencies:
   go_router: ^14.0.0
   toastification: ^3.2.0
   shared_preferences: ^2.5.5
+  drift: ^2.34.0
+  drift_flutter: ^0.3.0
 
 dev_dependencies:
   flutter_test:
@@ -35,6 +35,12 @@ dev_dependencies:
   flutter_lints: ^6.0.0
   build_runner: ^2.4.6
   json_serializable: ^6.7.1
+  drift_dev: ^2.34.1+1
+
+# Flutter 3.43+ final-class IconData 호환을 위해 patched 로컬 사본 사용
+dependency_overrides:
+  phosphor_flutter:
+    path: packages/phosphor_flutter
 
 
 flutter:
@@ -42,8 +48,6 @@ flutter:
   uses-material-design: true
 
   assets:
-    - .env
-    - .env_example
     - assets/fonts/
 
 

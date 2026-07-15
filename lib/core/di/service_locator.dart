@@ -1,15 +1,4 @@
-import 'package:commute_calendar/core/services/supabase_service.dart';
-import 'package:commute_calendar/feature/auth/data/datasources/auth_data_source.dart';
-import 'package:commute_calendar/feature/auth/data/repositories/auth_repository_impl.dart';
-import 'package:commute_calendar/feature/auth/domain/repositories/i_auth_repository.dart';
-import 'package:commute_calendar/feature/auth/domain/usecases/get_auth_state_stream_usecase.dart';
-import 'package:commute_calendar/feature/auth/domain/usecases/get_current_user_usecase.dart';
-import 'package:commute_calendar/feature/auth/domain/usecases/sign_in_usecase.dart';
-import 'package:commute_calendar/feature/auth/domain/usecases/sign_out_usecase.dart';
-import 'package:commute_calendar/feature/auth/domain/usecases/sign_up_usecase.dart';
-import 'package:commute_calendar/feature/auth/presentation/bloc/auth_bloc.dart';
-import 'package:commute_calendar/feature/auth/presentation/sign_in/bloc/sign_in_bloc.dart';
-import 'package:commute_calendar/feature/auth/presentation/sign_up/bloc/sign_up_bloc.dart';
+import 'package:commute_calendar/core/database/app_database.dart';
 import 'package:commute_calendar/feature/calendar/data/datasources/overtime_data_source.dart';
 import 'package:commute_calendar/feature/calendar/data/datasources/work_record_data_source.dart';
 import 'package:commute_calendar/feature/calendar/data/repositories/calendar_repository_impl.dart';
@@ -28,56 +17,19 @@ import 'package:commute_calendar/feature/calendar/domain/usecases/get_monthly_re
 import 'package:commute_calendar/feature/calendar/domain/usecases/update_work_record_usecase.dart';
 import 'package:commute_calendar/feature/calendar/presentation/bloc/calendar_bloc.dart';
 import 'package:get_it/get_it.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
 final getIt = GetIt.instance;
 
 Future<void> setupServiceLocator() async {
-  // 1. Services
-  getIt.registerSingleton<SupabaseClient>(supabaseService);
+  // 1. Database
+  getIt.registerSingleton<AppDatabase>(AppDatabase());
 
-  // 2. Auth — DataSource → Repository → UseCases → Bloc
-  getIt.registerSingleton<AuthDataSource>(
-    AuthDataSource(getIt<SupabaseClient>()),
-  );
-  getIt.registerSingleton<IAuthRepository>(
-    AuthRepositoryImpl(getIt<AuthDataSource>()),
-  );
-  getIt.registerFactory<SignInUseCase>(
-    () => SignInUseCase(getIt<IAuthRepository>()),
-  );
-  getIt.registerFactory<SignOutUseCase>(
-    () => SignOutUseCase(getIt<IAuthRepository>()),
-  );
-  getIt.registerFactory<GetCurrentUserUseCase>(
-    () => GetCurrentUserUseCase(getIt<IAuthRepository>()),
-  );
-  getIt.registerFactory<GetAuthStateStreamUseCase>(
-    () => GetAuthStateStreamUseCase(getIt<IAuthRepository>()),
-  );
-  getIt.registerSingleton<AuthBloc>(
-    AuthBloc(
-      getCurrentUser: getIt<GetCurrentUserUseCase>(),
-      getAuthStateStream: getIt<GetAuthStateStreamUseCase>(),
-      signOut: getIt<SignOutUseCase>(),
-    ),
-  );
-  getIt.registerFactory<SignUpUseCase>(
-    () => SignUpUseCase(getIt<IAuthRepository>()),
-  );
-  getIt.registerFactory<SignUpBloc>(
-    () => SignUpBloc(signUp: getIt<SignUpUseCase>()),
-  );
-  getIt.registerFactory<SignInBloc>(
-    () => SignInBloc(signIn: getIt<SignInUseCase>()),
-  );
-
-  // 3. Calendar — DataSource → Repository → UseCases → Bloc
+  // 2. Calendar — DataSource → Repository → UseCases → Bloc
   getIt.registerSingleton<WorkRecordDataSource>(
-    WorkRecordDataSource(getIt<SupabaseClient>()),
+    WorkRecordDataSource(getIt<AppDatabase>()),
   );
   getIt.registerSingleton<ICalendarRepository>(
-    CalendarRepositoryImpl(getIt<WorkRecordDataSource>(), getIt<SupabaseClient>()),
+    CalendarRepositoryImpl(getIt<WorkRecordDataSource>()),
   );
   getIt.registerFactory<GetMonthlyRecordsUseCase>(
     () => GetMonthlyRecordsUseCase(getIt<ICalendarRepository>()),
@@ -94,26 +46,13 @@ Future<void> setupServiceLocator() async {
   getIt.registerFactory<CalculateMonthlyStatsUseCase>(
     () => CalculateMonthlyStatsUseCase(getIt<ICalendarRepository>()),
   );
-  getIt.registerFactory<CalendarBloc>(
-    () => CalendarBloc(
-      getMonthlyRecords: getIt<GetMonthlyRecordsUseCase>(),
-      addWorkRecord: getIt<AddWorkRecordUseCase>(),
-      updateWorkRecord: getIt<UpdateWorkRecordUseCase>(),
-      deleteWorkRecord: getIt<DeleteWorkRecordUseCase>(),
-      calculateMonthlyStats: getIt<CalculateMonthlyStatsUseCase>(),
-      getOvertimeRecords: getIt<GetOvertimeRecordsUseCase>(),
-      addOvertimeRecord: getIt<AddOvertimeRecordUseCase>(),
-      updateOvertimeRecord: getIt<UpdateOvertimeRecordUseCase>(),
-      deleteOvertimeRecord: getIt<DeleteOvertimeRecordUseCase>(),
-    ),
-  );
 
-  // 4. Overtime — DataSource → Repository → UseCases
+  // 3. Overtime — DataSource → Repository → UseCases
   getIt.registerSingleton<OvertimeDataSource>(
-    OvertimeDataSource(getIt<SupabaseClient>()),
+    OvertimeDataSource(getIt<AppDatabase>()),
   );
   getIt.registerSingleton<IOvertimeRepository>(
-    OvertimeRepositoryImpl(getIt<OvertimeDataSource>(), getIt<SupabaseClient>()),
+    OvertimeRepositoryImpl(getIt<OvertimeDataSource>()),
   );
   getIt.registerFactory<GetOvertimeRecordsUseCase>(
     () => GetOvertimeRecordsUseCase(getIt<IOvertimeRepository>()),
@@ -129,5 +68,20 @@ Future<void> setupServiceLocator() async {
   );
   getIt.registerFactory<CalculateOvertimeStatsUseCase>(
     () => CalculateOvertimeStatsUseCase(getIt<IOvertimeRepository>()),
+  );
+
+  // 4. Calendar Bloc (특근 UseCase 의존 → 마지막에 등록)
+  getIt.registerFactory<CalendarBloc>(
+    () => CalendarBloc(
+      getMonthlyRecords: getIt<GetMonthlyRecordsUseCase>(),
+      addWorkRecord: getIt<AddWorkRecordUseCase>(),
+      updateWorkRecord: getIt<UpdateWorkRecordUseCase>(),
+      deleteWorkRecord: getIt<DeleteWorkRecordUseCase>(),
+      calculateMonthlyStats: getIt<CalculateMonthlyStatsUseCase>(),
+      getOvertimeRecords: getIt<GetOvertimeRecordsUseCase>(),
+      addOvertimeRecord: getIt<AddOvertimeRecordUseCase>(),
+      updateOvertimeRecord: getIt<UpdateOvertimeRecordUseCase>(),
+      deleteOvertimeRecord: getIt<DeleteOvertimeRecordUseCase>(),
+    ),
   );
 }
